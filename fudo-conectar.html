@@ -6,55 +6,47 @@
 <title>FUDO Conectar · Dulcitos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#d8d6cc;--border2:#c8c6ba;--accent:#1a1a2e;--accent2:#e85d3a;--accent3:#2d9e6b;--accent4:#d4a017;--text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#9a9a9a;--radius:14px;--radius-sm:8px;--shadow:0 2px 12px rgba(0,0,0,.07);}
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#d8d6cc;--accent:#1a1a2e;--accent2:#e85d3a;--accent3:#2d9e6b;--accent4:#d4a017;--text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#9a9a9a;--radius:14px;--radius-sm:8px;--shadow:0 2px 12px rgba(0,0,0,.07);}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-.app{max-width:760px;margin:0 auto;padding:24px 16px 80px;}
+.app{max-width:740px;margin:0 auto;padding:24px 16px 80px;}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
 .logo{display:flex;align-items:center;gap:12px;}
 .logo-mark{width:44px;height:44px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;box-shadow:3px 3px 0 var(--accent2);}
 .logo-text h1{font-size:17px;font-weight:700;}
 .logo-text span{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
-.conn-status{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;}
+.conn-badge{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;}
 .dot{width:10px;height:10px;border-radius:50%;background:#ccc;transition:background .3s;}
-.dot.green{background:var(--accent3);}
-.dot.red{background:var(--accent2);}
-.dot.yellow{background:var(--accent4);animation:blink .8s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
+.dot.g{background:var(--accent3);}
+.dot.r{background:var(--accent2);}
+.dot.y{background:var(--accent4);animation:bl .8s ease-in-out infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
 .tabs{display:flex;gap:0;margin-bottom:20px;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;}
 .tab{flex:1;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .2s;color:var(--text-muted);}
 .tab.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08);}
-
 .sec{display:none;}
 .sec.active{display:block;animation:fi .2s ease;}
 @keyframes fi{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
 .ctitle{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;font-family:'DM Mono',monospace;margin-bottom:14px;}
 .cheader{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .frow.one{grid-template-columns:1fr;}
-@media(max-width:520px){.frow{grid-template-columns:1fr;}}
+@media(max-width:500px){.frow{grid-template-columns:1fr;}}
 .field{display:flex;flex-direction:column;gap:5px;}
 .field label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
-input{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;font-size:14px;color:var(--text);font-family:'DM Mono',monospace;outline:none;transition:border-color .2s,background .2s;width:100%;}
-input:focus{border-color:var(--accent);background:white;}
-select{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;font-size:14px;color:var(--text);font-family:'DM Mono',monospace;outline:none;width:100%;}
+input,select{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;font-size:14px;color:var(--text);font-family:'DM Mono',monospace;outline:none;transition:border-color .2s,background .2s;width:100%;}
+input:focus,select:focus{border-color:var(--accent);background:white;}
 .hint{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:3px;}
-
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 .btn-p{background:var(--accent);color:white;box-shadow:3px 3px 0 var(--accent2);}
 .btn-p:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--accent2);}
 .btn-g{background:var(--accent3);color:white;box-shadow:3px 3px 0 #1a7a4a;}
 .btn-g:hover:not(:disabled){transform:translate(-1px,-1px);}
-.btn-o{background:white;color:var(--text);border:1.5px solid var(--border2);}
+.btn-o{background:white;color:var(--text);border:1.5px solid var(--border);}
 .btn-o:hover{border-color:var(--accent);color:var(--accent);}
 .btn-sm{padding:6px 12px;font-size:12px;}
-.btn-full{width:100%;}
-
 .al{border-radius:var(--radius-sm);padding:11px 15px;font-size:13px;margin-bottom:12px;display:flex;gap:9px;align-items:flex-start;animation:fi .2s ease;}
 .ai{font-size:14px;flex-shrink:0;margin-top:1px;}
 .al-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;}
@@ -62,184 +54,165 @@ select{background:var(--surface2);border:1.5px solid var(--border);border-radius
 .al-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;}
 .al-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;}
 hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
-
-/* Token card */
-.token-card{background:var(--accent);color:white;border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;}
-.token-card .tl{font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
-.token-card .tv{font-size:13px;font-weight:600;font-family:'DM Mono',monospace;margin-top:3px;word-break:break-all;}
-.token-meta{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;}
-.token-meta-item{flex:1;min-width:110px;}
+.tok-card{background:var(--accent);color:white;border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;}
+.tok-card .tl{font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
+.tok-card .tv{font-size:13px;font-weight:600;font-family:'DM Mono',monospace;margin-top:3px;word-break:break-all;}
+.tok-meta{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;}
+.tok-mi{flex:1;min-width:100px;}
 .exp-bar{height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:10px;overflow:hidden;}
-.exp-fill{height:100%;border-radius:2px;transition:width .5s;background:var(--accent3);}
-.exp-fill.warn{background:var(--accent4);}
-.exp-fill.danger{background:var(--accent2);}
-
-/* Catalog tables */
+.exp-f{height:100%;border-radius:2px;transition:width .5s;background:var(--accent3);}
+.exp-f.w{background:var(--accent4);}
+.exp-f.d{background:var(--accent2);}
 .ctbl{width:100%;border-collapse:collapse;font-size:12px;}
 .ctbl th{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;text-align:left;padding:7px 9px;border-bottom:2px solid var(--border);font-family:'DM Mono',monospace;white-space:nowrap;}
 .ctbl td{padding:8px 9px;border-bottom:1px solid var(--surface2);font-family:'DM Mono',monospace;font-size:12px;vertical-align:middle;}
 .ctbl tr:last-child td{border-bottom:none;}
 .ctbl tr:hover td{background:var(--surface2);}
-.idbadge{background:var(--accent);color:white;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;}
-.tbadge{border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;}
+.idb{background:var(--accent);color:white;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;}
+.tb{border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;}
 .tb-ok{background:#dcfce7;color:#15803d;}
 .tb-no{background:#fee2e2;color:#dc2626;}
-
-/* Summary chips */
 .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
 .chip{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;flex:1;min-width:90px;text-align:center;}
 .chip .cv{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;}
 .chip .cl{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
-.chip.blue .cv{color:#2563eb;}
-.chip.green .cv{color:var(--accent3);}
-
-/* Spinner */
+.chip.bl .cv{color:#2563eb;}
+.chip.gr .cv{color:var(--accent3);}
 .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:rot .6s linear infinite;display:inline-block;}
 @keyframes rot{to{transform:rotate(360deg)}}
-
-/* JSON block */
 .jblock{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);padding:14px;font-size:11px;font-family:'DM Mono',monospace;overflow:auto;white-space:pre;max-height:320px;margin-top:10px;line-height:1.6;}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);text-decoration:none;margin-bottom:20px;}
+.back-link:hover{color:var(--accent);}
 </style>
 </head>
 <body>
 <div class="app">
+
+<a href="index.html" class="back-link">← Panel principal</a>
 
 <header>
   <div class="logo">
     <div class="logo-mark">🔌</div>
     <div class="logo-text">
       <h1>FUDO Conectar</h1>
-      <span>api.fu.do/v1alpha1 · Dulcitos Talca</span>
+      <span>auth.fu.do → api.fu.do/v1alpha1</span>
     </div>
   </div>
-  <div class="conn-status">
+  <div class="conn-badge">
     <span class="dot" id="dot"></span>
-    <span id="conn-lbl">Sin conectar</span>
+    <span id="clbl">Sin conectar</span>
   </div>
 </header>
 
-<div id="alert-global"></div>
+<div id="ag"></div>
 
 <div class="tabs">
-  <div class="tab active" id="tab-btn-config" onclick="showTab('config')">⚙ Conexión</div>
-  <div class="tab" id="tab-btn-catalogo" onclick="showTab('catalogo')">📚 Catálogo</div>
-  <div class="tab" id="tab-btn-test" onclick="showTab('test')">🧪 Probar</div>
+  <div class="tab active" id="tb-config" onclick="showTab('config')">⚙ Conexión</div>
+  <div class="tab" id="tb-catalogo" onclick="showTab('catalogo')">📚 Catálogo</div>
+  <div class="tab" id="tb-test" onclick="showTab('test')">🧪 Probar</div>
 </div>
 
-<!-- ══ TAB: CONEXIÓN ══ -->
+<!-- CONEXIÓN -->
 <div class="sec active" id="tab-config">
 
-  <!-- Token activo -->
-  <div id="token-card" style="display:none;">
-    <div class="token-card">
+  <div id="tok-display" style="display:none;">
+    <div class="tok-card">
       <div class="tl">Token activo</div>
       <div class="tv" id="tok-val">—</div>
-      <div class="token-meta">
-        <div class="token-meta-item"><div class="tl">Expira</div><div style="font-size:12px;font-weight:600;font-family:'DM Mono',monospace;margin-top:2px;" id="tok-exp">—</div></div>
-        <div class="token-meta-item"><div class="tl">Restante</div><div style="font-size:12px;font-weight:600;font-family:'DM Mono',monospace;margin-top:2px;" id="tok-rem">—</div></div>
+      <div class="tok-meta">
+        <div class="tok-mi"><div class="tl">Expira</div><div style="font-size:12px;font-weight:600;font-family:'DM Mono',monospace;margin-top:2px;" id="tok-exp">—</div></div>
+        <div class="tok-mi"><div class="tl">Restante</div><div style="font-size:12px;font-weight:600;font-family:'DM Mono',monospace;margin-top:2px;" id="tok-rem">—</div></div>
       </div>
-      <div class="exp-bar"><div class="exp-fill" id="exp-fill" style="width:100%"></div></div>
+      <div class="exp-bar"><div class="exp-f" id="exp-f" style="width:100%"></div></div>
     </div>
-    <button class="btn btn-o btn-full" onclick="doRefreshToken()" style="margin-bottom:14px;">🔄 Renovar token ahora</button>
+    <button class="btn btn-o" style="width:100%;margin-bottom:14px;" onclick="doAuth(true)">🔄 Renovar token</button>
   </div>
 
-  <!-- Credenciales -->
   <div class="card">
-    <div class="ctitle">🔑 Token de acceso FUDO</div>
+    <div class="ctitle">🔑 Credenciales API FUDO</div>
     <div class="al al-info" style="margin-bottom:14px;">
       <span class="ai">ℹ</span>
-      <div>En FUDO andá a <strong>Administración → Usuarios → claude@dulcitostalca → Establecer API Secret</strong>. Copiá el token que aparece y pegalo aquí. <strong>Solo se muestra una vez.</strong> Dura 24 horas — cuando expire generás uno nuevo desde el mismo lugar.</div>
+      <div>Usá el <strong>apiKey</strong> y <strong>apiSecret</strong> del usuario API que creaste en FUDO. La autenticación se hace en <code>https://auth.fu.do/api</code> y devuelve un token que se renueva automáticamente.</div>
     </div>
-    <div id="alert-creds"></div>
-    <div class="frow one">
+    <div id="acreds"></div>
+    <div class="frow">
       <div class="field">
-        <label>Token (API Secret de FUDO)</label>
-        <input type="password" id="f-token" placeholder="Pegá aquí el token generado en FUDO">
-        <div class="hint">Administración → Usuarios → Establecer API Secret</div>
+        <label>apiKey</label>
+        <input type="text" id="f-key" placeholder="Tu apiKey de FUDO">
+      </div>
+      <div class="field">
+        <label>apiSecret</label>
+        <input type="password" id="f-sec" placeholder="Tu apiSecret de FUDO">
       </div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
+    <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
       <button class="btn btn-o" onclick="saveCreds()">💾 Guardar</button>
-      <button class="btn btn-p" id="btn-connect" onclick="connectFudo()">🔌 Verificar y conectar</button>
+      <button class="btn btn-p" id="btn-con" onclick="connect()">🔌 Conectar con FUDO</button>
     </div>
   </div>
 
-  <!-- Cómo funciona -->
   <div class="card">
-    <div class="ctitle">ℹ Cómo funciona</div>
+    <div class="ctitle">📋 Cómo obtener las credenciales</div>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <div style="display:flex;gap:12px;">
-        <div style="width:26px;height:26px;min-width:26px;background:var(--accent3);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">✓</div>
-        <div><div style="font-weight:600;font-size:13px;">Credenciales guardadas en tu navegador</div><div class="hint">Nunca se envían a ningún servidor externo. Solo se usan para hablar directamente con FUDO.</div></div>
+        <div style="width:26px;height:26px;min-width:26px;background:var(--accent3);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">✓</div>
+        <div><div style="font-weight:600;font-size:13px;">Ya tenés el apiKey y apiSecret</div><div class="hint">Son las credenciales del usuario API que creaste. Ingresalas arriba una sola vez.</div></div>
       </div>
       <div style="display:flex;gap:12px;">
-        <div style="width:26px;height:26px;min-width:26px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">🔄</div>
-        <div><div style="font-weight:600;font-size:13px;">Token se renueva automáticamente</div><div class="hint">El token dura 24 horas. La herramienta lo renueva sola antes de que expire.</div></div>
+        <div style="width:26px;height:26px;min-width:26px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">🔄</div>
+        <div><div style="font-weight:600;font-size:13px;">El token se renueva automáticamente</div><div class="hint">Dura 24 horas. La herramienta lo renueva sola cuando está por vencer.</div></div>
       </div>
       <div style="display:flex;gap:12px;">
-        <div style="width:26px;height:26px;min-width:26px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">📚</div>
-        <div><div style="font-weight:600;font-size:13px;">Catálogo sincronizado desde tu FUDO real</div><div class="hint">Al conectar descarga categorías, medios de pago y proveedores con sus IDs reales.</div></div>
+        <div style="width:26px;height:26px;min-width:26px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">📚</div>
+        <div><div style="font-weight:600;font-size:13px;">Catálogo sincronizado desde FUDO</div><div class="hint">Al conectar descarga tus categorías, medios de pago y proveedores reales.</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ TAB: CATÁLOGO ══ -->
+<!-- CATÁLOGO -->
 <div class="sec" id="tab-catalogo">
-  <div id="alert-cat"></div>
-
+  <div id="acat"></div>
   <div class="chips" id="chips" style="display:none;">
-    <div class="chip blue"><div class="cv" id="c-cats">—</div><div class="cl">Categorías</div></div>
-    <div class="chip blue"><div class="cv" id="c-pms">—</div><div class="cl">Medios pago</div></div>
-    <div class="chip blue"><div class="cv" id="c-provs">—</div><div class="cl">Proveedores</div></div>
-    <div class="chip green"><div class="cv" id="c-sync">—</div><div class="cl">Última sync</div></div>
+    <div class="chip bl"><div class="cv" id="c-cats">—</div><div class="cl">Categorías</div></div>
+    <div class="chip bl"><div class="cv" id="c-pms">—</div><div class="cl">Medios pago</div></div>
+    <div class="chip bl"><div class="cv" id="c-provs">—</div><div class="cl">Proveedores</div></div>
+    <div class="chip gr"><div class="cv" id="c-sync">—</div><div class="cl">Última sync</div></div>
   </div>
-
   <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
     <button class="btn btn-p" onclick="syncAll()">🔄 Sincronizar desde FUDO</button>
-    <button class="btn btn-o btn-sm" onclick="exportConfig()">📥 Exportar config JSON</button>
+    <button class="btn btn-o btn-sm" onclick="exportCfg()">📥 Exportar JSON</button>
   </div>
-
   <div class="card">
-    <div class="cheader"><div class="ctitle">📁 Categorías de gasto</div><span class="hint" id="cats-n">—</span></div>
-    <div style="overflow-x:auto;"><table class="ctbl"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo financiero</th></tr></thead><tbody id="cats-body"><tr><td colspan="3" style="color:var(--text-muted);padding:14px;text-align:center;">Conectá FUDO primero</td></tr></tbody></table></div>
+    <div class="cheader"><div class="ctitle">📁 Categorías de gasto</div><span class="hint" id="n-cats">—</span></div>
+    <div style="overflow-x:auto;"><table class="ctbl"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo financiero</th></tr></thead><tbody id="b-cats"><tr><td colspan="3" style="color:var(--text-muted);padding:14px;text-align:center;">Conectá FUDO primero</td></tr></tbody></table></div>
   </div>
-
   <div class="card">
-    <div class="cheader"><div class="ctitle">💳 Medios de pago</div><span class="hint" id="pms-n">—</span></div>
-    <div style="overflow-x:auto;"><table class="ctbl"><thead><tr><th>ID</th><th>Nombre</th><th>Código</th><th>Para gastos</th></tr></thead><tbody id="pms-body"><tr><td colspan="4" style="color:var(--text-muted);padding:14px;text-align:center;">Conectá FUDO primero</td></tr></tbody></table></div>
+    <div class="cheader"><div class="ctitle">💳 Medios de pago</div><span class="hint" id="n-pms">—</span></div>
+    <div style="overflow-x:auto;"><table class="ctbl"><thead><tr><th>ID</th><th>Nombre</th><th>Código</th><th>Para gastos</th></tr></thead><tbody id="b-pms"><tr><td colspan="4" style="color:var(--text-muted);padding:14px;text-align:center;">Conectá FUDO primero</td></tr></tbody></table></div>
   </div>
-
   <div class="card">
-    <div class="cheader"><div class="ctitle">🏢 Proveedores</div><span class="hint" id="provs-n">—</span></div>
-    <div style="overflow-x:auto;"><table class="ctbl"><thead><tr><th>ID</th><th>Nombre</th><th>RUT</th><th>Email</th></tr></thead><tbody id="provs-body"><tr><td colspan="4" style="color:var(--text-muted);padding:14px;text-align:center;">Conectá FUDO primero</td></tr></tbody></table></div>
+    <div class="cheader"><div class="ctitle">🏢 Proveedores</div><span class="hint" id="n-provs">—</span></div>
+    <div style="overflow-x:auto;"><table class="ctbl"><thead><tr><th>ID</th><th>Nombre</th><th>RUT</th><th>Email</th></tr></thead><tbody id="b-provs"><tr><td colspan="4" style="color:var(--text-muted);padding:14px;text-align:center;">Conectá FUDO primero</td></tr></tbody></table></div>
   </div>
 </div>
 
-<!-- ══ TAB: PROBAR ══ -->
+<!-- PROBAR -->
 <div class="sec" id="tab-test">
-  <div id="alert-test"></div>
-
+  <div id="atest"></div>
   <div class="card">
     <div class="ctitle">🧪 Crear gasto de prueba ($1)</div>
-    <div class="al al-warn" style="margin-bottom:14px;"><span class="ai">⚠</span><div>Esto crea un gasto REAL de $1 en tu FUDO para verificar que la conexión funciona. Podés eliminarlo después.</div></div>
+    <div class="al al-warn" style="margin-bottom:14px;"><span class="ai">⚠</span><div>Crea un gasto REAL de $1 en FUDO para verificar la conexión. Podés eliminarlo después.</div></div>
     <button class="btn btn-p" id="btn-test" onclick="testExpense()">🧪 Crear gasto de prueba</button>
     <div id="test-res" style="margin-top:14px;"></div>
   </div>
-
   <div class="card">
-    <div class="ctitle">📡 Probar endpoint</div>
+    <div class="ctitle">📡 Probar endpoint manual</div>
     <div class="frow">
-      <div class="field">
-        <label>Método</label>
-        <select id="t-method"><option>GET</option><option>POST</option></select>
-      </div>
-      <div class="field">
-        <label>Endpoint</label>
-        <input type="text" id="t-endpoint" value="/expense-categories">
-      </div>
+      <div class="field"><label>Método</label><select id="t-met"><option>GET</option><option>POST</option></select></div>
+      <div class="field"><label>Endpoint</label><input type="text" id="t-ep" value="/expense-categories"></div>
     </div>
-    <button class="btn btn-p btn-sm" onclick="testEndpoint()">▶ Ejecutar</button>
+    <button class="btn btn-p btn-sm" onclick="testEp()">▶ Ejecutar</button>
     <div id="t-res" style="margin-top:12px;"></div>
   </div>
 </div>
@@ -247,268 +220,253 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </div>
 
 <script>
-const API_BASE  = 'https://api.fu.do/v1alpha1';
+// ── Constantes ────────────────────────────────────────────
+const PROXY = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
+const AUTH  = PROXY + encodeURIComponent('https://auth.fu.do/api');
+const BASE  = 'https://api.fu.do/v1alpha1';
 
-// Storage
+function proxyUrl(endpoint) {
+  return PROXY + encodeURIComponent(BASE + endpoint);
+}
+
+// ── Storage ───────────────────────────────────────────────
 const S = {
-  get: (k, d) => { try { const v = localStorage.getItem('fd_'+k); return v != null ? JSON.parse(v) : (d ?? null); } catch { return d ?? null; } },
-  set: (k, v) => { try { localStorage.setItem('fd_'+k, JSON.stringify(v)); } catch {} },
-  del: (k)    => { try { localStorage.removeItem('fd_'+k); } catch {} }
+  g: (k,d) => { try { const v=localStorage.getItem('fd_'+k); return v!=null?JSON.parse(v):(d??null); } catch { return d??null; } },
+  s: (k,v) => { try { localStorage.setItem('fd_'+k,JSON.stringify(v)); } catch {} },
+  d: (k)   => { try { localStorage.removeItem('fd_'+k); } catch {} }
 };
 
 // ── Auth ──────────────────────────────────────────────────
-// La API de propósito general de FUDO usa el token directo generado en
-// Administración → Usuarios → Establecer API Secret
-// Se envía como Bearer token en cada request. Dura 24 horas.
-function getToken() {
-  const c = S.get('creds');
-  if (!c || !c.token) throw new Error('Sin token. Generá uno en FUDO → Administración → Usuarios → Establecer API Secret.');
-  return c.token;
+async function getToken() {
+  const td = S.g('td');
+  if (td?.token) {
+    const now = Math.floor(Date.now()/1000);
+    if (td.exp && (td.exp - now) > 300) return td.token;
+  }
+  return doAuth(false);
 }
 
-// Placeholder — la API de propósito general no tiene endpoint de refresh automático
-// El usuario debe generar un nuevo token cada 24h desde FUDO
-async function doRefreshToken() {
-  return getToken();
-}
-
-// ── API helpers ───────────────────────────────────────────
-async function apiGet(ep, params) {
-  const token = getToken();
-  const url = new URL(API_BASE + ep);
-  if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), {
-    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+async function doAuth(manual) {
+  const c = S.g('creds');
+  if (!c?.key || !c?.sec) throw new Error('Sin credenciales. Ingresá el apiKey y apiSecret primero.');
+  const res = await fetch(AUTH, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ apiKey: c.key, apiSecret: c.sec })
   });
-  if (res.status === 401) throw new Error('Token inválido o expirado. Generá uno nuevo en FUDO → Administración → Usuarios → Establecer API Secret.');
-  if (!res.ok) throw new Error('GET ' + ep + ' → ' + res.status + ': ' + await res.text());
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error('Error de autenticación (' + res.status + '): ' + txt);
+  }
+  const data = await res.json();
+  S.s('td', { token: data.token, exp: data.exp });
+  showTok(data.token, data.exp);
+  setDot('y','Conectado ✓');
+  setTimeout(() => setDot('g','Conectado ✓'), 500);
+  if (manual) showAl('acreds','al-ok','✓','Token renovado correctamente.');
+  return data.token;
+}
+
+// ── API ───────────────────────────────────────────────────
+async function GET(ep, params) {
+  const tok = await getToken();
+  let url = proxyUrl(ep);
+  if (params) {
+    const base = new URL(BASE + ep);
+    Object.entries(params).forEach(([k,v]) => base.searchParams.set(k,v));
+    url = PROXY + encodeURIComponent(base.toString());
+  }
+  const res = await fetch(url, {
+    headers: { 'Authorization': 'Bearer '+tok, 'Accept': 'application/json' }
+  });
+  if (res.status===401) throw new Error('Token inválido. Reconectá en la pestaña Conexión.');
+  if (!res.ok) throw new Error('GET '+ep+' → '+res.status+': '+await res.text());
   return res.json();
 }
 
-async function apiPost(ep, body) {
-  const token = getToken();
-  const res = await fetch(API_BASE + ep, {
+async function POST(ep, body) {
+  const tok = await getToken();
+  const url = ep === '__auth__' ? AUTH : proxyUrl(ep);
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    headers: { 'Authorization': 'Bearer '+tok, 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify(body)
   });
   const txt = await res.text();
-  let data; try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
-  if (res.status === 401) throw new Error('Token inválido o expirado. Generá uno nuevo en FUDO.');
-  if (!res.ok) throw new Error('POST ' + ep + ' → ' + res.status + ': ' + txt);
-  return data;
+  let d; try { d=JSON.parse(txt); } catch { d={raw:txt}; }
+  if (res.status===401) throw new Error('Token inválido. Reconectá en la pestaña Conexión.');
+  if (!res.ok) throw new Error('POST '+ep+' → '+res.status+': '+txt);
+  return d;
 }
 
-async function apiGetAll(ep) {
-  let all = [], page = 1;
-  while (true) {
-    const d = await apiGet(ep, { 'page[size]': '500', 'page[number]': String(page) });
-    const items = d.data || [];
+async function getAll(ep) {
+  let all=[], page=1;
+  while(true) {
+    const d = await GET(ep, {'page[size]':'500','page[number]':String(page)});
+    const items = d.data||[];
     all = all.concat(items);
-    if (items.length < 500) break;
+    if (items.length<500) break;
     page++;
   }
   return all;
 }
 
 // ── Connect ───────────────────────────────────────────────
-async function connectFudo() {
-  const btn = document.getElementById('btn-connect');
-  if (!gv('f-token')) return showAl('alert-creds','al-err','✗','Pegá el token que generaste en FUDO.');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Verificando...';
-  setDot('yellow', 'Verificando...');
-  saveCreds();
+async function connect() {
+  const key = gv('f-key'), sec = gv('f-sec');
+  if (!key || !sec) return showAl('acreds','al-err','✗','Ingresá el apiKey y el apiSecret.');
+  const btn = document.getElementById('btn-con');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Conectando...';
+  setDot('y','Conectando...');
+  S.s('creds', { key, sec });
   try {
-    // Verificamos el token haciendo una llamada real a la API
-    await apiGet('/expense-categories', { 'page[size]': '1' });
-    setDot('green', 'Conectado ✓');
-    showAl('alert-creds','al-ok','✓','¡Token verificado! Conexión exitosa con FUDO.');
-    showTokenCard(gv('f-token') || S.get('creds')?.token);
+    await doAuth(false);
+    showAl('acreds','al-ok','✓','¡Conexión exitosa! Token obtenido. Se renueva automáticamente cada 24h.');
+    document.getElementById('tok-display').style.display='block';
     await syncAll();
   } catch(e) {
-    setDot('red', 'Error');
-    showAl('alert-creds','al-err','✗', e.message);
+    setDot('r','Error');
+    showAl('acreds','al-err','✗', e.message);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '🔌 Verificar y conectar';
+    btn.disabled=false; btn.innerHTML='🔌 Conectar con FUDO';
   }
 }
 
-// ── Sync catalog ──────────────────────────────────────────
+// ── Sync ──────────────────────────────────────────────────
 async function syncAll() {
-  showAl('alert-cat', 'al-info', '⏳', 'Sincronizando catálogo...');
+  showAl('acat','al-info','⏳','Sincronizando catálogo desde FUDO...');
   try {
-    const [cats, pms, provs] = await Promise.all([
-      apiGetAll('/expense-categories'),
-      apiGetAll('/payment-methods'),
-      apiGetAll('/providers'),
+    const [cats,pms,provs] = await Promise.all([
+      getAll('/expense-categories'),
+      getAll('/payment-methods'),
+      getAll('/providers')
     ]);
-    S.set('cats', cats);
-    S.set('pms', pms);
-    S.set('provs', provs);
-    S.set('sync', new Date().toISOString());
-    renderCatalog(cats, pms, provs);
-    showAl('alert-cat', 'al-ok', '✓', cats.length + ' categorías · ' + pms.length + ' medios de pago · ' + provs.length + ' proveedores sincronizados.');
+    S.s('cats',cats); S.s('pms',pms); S.s('provs',provs);
+    S.s('sync', new Date().toISOString());
+    renderCat(cats,pms,provs);
+    showAl('acat','al-ok','✓', cats.length+' categorías · '+pms.length+' medios de pago · '+provs.length+' proveedores.');
   } catch(e) {
-    showAl('alert-cat', 'al-err', '✗', 'Error al sincronizar: ' + e.message);
+    showAl('acat','al-err','✗','Error: '+e.message);
   }
 }
 
-function renderCatalog(cats, pms, provs) {
-  document.getElementById('chips').style.display = 'flex';
-  document.getElementById('c-cats').textContent  = cats.length;
-  document.getElementById('c-pms').textContent   = pms.length;
-  document.getElementById('c-provs').textContent = provs.length;
-  const sync = S.get('sync');
-  document.getElementById('c-sync').textContent  = sync ? new Date(sync).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '—';
-
-  document.getElementById('cats-n').textContent = cats.length + ' categorías';
-  document.getElementById('cats-body').innerHTML = cats.map(c =>
-    '<tr><td><span class="idbadge">' + esc(c.id) + '</span></td><td style="font-family:\'DM Sans\',sans-serif;">' + esc(c.attributes?.name||'—') + '</td><td>' + esc(c.attributes?.financialType||'—') + '</td></tr>'
-  ).join('') || '<tr><td colspan="3" style="color:var(--text-muted);padding:12px;">Sin categorías</td></tr>';
-
-  document.getElementById('pms-n').textContent = pms.length + ' métodos';
-  document.getElementById('pms-body').innerHTML = pms
-    .sort((a,b) => (b.attributes?.forExpenses?1:0)-(a.attributes?.forExpenses?1:0))
-    .map(p => '<tr style="' + (p.attributes?.forExpenses?'':'opacity:.5') + '">' +
-      '<td><span class="idbadge">' + esc(p.id) + '</span></td>' +
-      '<td style="font-family:\'DM Sans\',sans-serif;font-weight:' + (p.attributes?.forExpenses?'600':'400') + ';">' + esc(p.attributes?.name||'—') + '</td>' +
-      '<td>' + esc(p.attributes?.code||'—') + '</td>' +
-      '<td><span class="tbadge ' + (p.attributes?.forExpenses?'tb-ok':'tb-no') + '">' + (p.attributes?.forExpenses?'✓ Sí':'✗ No') + '</span></td></tr>'
-    ).join('') || '<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Sin métodos</td></tr>';
-
-  document.getElementById('provs-n').textContent = provs.length + ' proveedores';
-  document.getElementById('provs-body').innerHTML = provs.map(p =>
-    '<tr><td><span class="idbadge">' + esc(p.id) + '</span></td>' +
-    '<td style="font-family:\'DM Sans\',sans-serif;font-weight:600;">' + esc(p.attributes?.name||'—') + '</td>' +
-    '<td>' + esc(p.attributes?.fiscalNumber||'—') + '</td>' +
-    '<td>' + esc(p.attributes?.email||'—') + '</td></tr>'
-  ).join('') || '<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Sin proveedores</td></tr>';
+function renderCat(cats,pms,provs) {
+  document.getElementById('chips').style.display='flex';
+  document.getElementById('c-cats').textContent=cats.length;
+  document.getElementById('c-pms').textContent=pms.length;
+  document.getElementById('c-provs').textContent=provs.length;
+  const sync=S.g('sync');
+  document.getElementById('c-sync').textContent=sync?new Date(sync).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}):'—';
+  document.getElementById('n-cats').textContent=cats.length+' categorías';
+  document.getElementById('b-cats').innerHTML=cats.map(c=>
+    '<tr><td><span class="idb">'+e(c.id)+'</span></td><td style="font-family:\'DM Sans\',sans-serif;">'+e(c.attributes?.name||'—')+'</td><td>'+e(c.attributes?.financialType||'—')+'</td></tr>'
+  ).join('')||'<tr><td colspan="3" style="color:var(--text-muted);padding:12px;">Sin datos</td></tr>';
+  document.getElementById('n-pms').textContent=pms.length+' métodos';
+  document.getElementById('b-pms').innerHTML=pms.sort((a,b)=>(b.attributes?.forExpenses?1:0)-(a.attributes?.forExpenses?1:0)).map(p=>
+    '<tr style="'+(p.attributes?.forExpenses?'':'opacity:.5')+'"><td><span class="idb">'+e(p.id)+'</span></td><td style="font-family:\'DM Sans\',sans-serif;font-weight:'+(p.attributes?.forExpenses?600:400)+';">'+e(p.attributes?.name||'—')+'</td><td>'+e(p.attributes?.code||'—')+'</td><td><span class="tb '+(p.attributes?.forExpenses?'tb-ok':'tb-no')+'">'+(p.attributes?.forExpenses?'✓ Sí':'✗ No')+'</span></td></tr>'
+  ).join('')||'<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Sin datos</td></tr>';
+  document.getElementById('n-provs').textContent=provs.length+' proveedores';
+  document.getElementById('b-provs').innerHTML=provs.map(p=>
+    '<tr><td><span class="idb">'+e(p.id)+'</span></td><td style="font-family:\'DM Sans\',sans-serif;font-weight:600;">'+e(p.attributes?.name||'—')+'</td><td>'+e(p.attributes?.fiscalNumber||'—')+'</td><td>'+e(p.attributes?.email||'—')+'</td></tr>'
+  ).join('')||'<tr><td colspan="4" style="color:var(--text-muted);padding:12px;">Sin datos</td></tr>';
 }
 
-// ── Test ──────────────────────────────────────────────────
+// ── Test expense ──────────────────────────────────────────
 async function testExpense() {
-  const btn = document.getElementById('btn-test');
-  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Creando...';
-  const cats = S.get('cats') || [];
-  const pms  = (S.get('pms') || []).filter(p => p.attributes?.forExpenses);
+  const btn=document.getElementById('btn-test');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Creando...';
+  const cats=S.g('cats')||[], pms=(S.g('pms')||[]).filter(p=>p.attributes?.forExpenses);
   if (!cats.length) {
-    document.getElementById('test-res').innerHTML = '<div class="al al-warn"><span class="ai">⚠</span><div>Sincronizá el catálogo primero.</div></div>';
-    btn.disabled = false; btn.innerHTML = '🧪 Crear gasto de prueba';
-    return;
+    document.getElementById('test-res').innerHTML='<div class="al al-warn"><span class="ai">⚠</span><div>Sincronizá el catálogo primero.</div></div>';
+    btn.disabled=false; btn.innerHTML='🧪 Crear gasto de prueba'; return;
   }
-  const today = new Date().toISOString().split('T')[0];
-  const payload = {
-    data: {
-      type: 'Expense',
-      attributes: { amount: 1, date: today, description: 'PRUEBA API FacturaScan - eliminar', receiptNumber: 'TEST-001', useInCashCount: false, paymentDate: today },
-      relationships: {
-        expenseCategory: { data: { id: cats[0].id, type: 'ExpenseCategory' } },
-        ...(pms.length ? { paymentMethod: { data: { id: pms[0].id, type: 'PaymentMethod' } } } : {})
-      }
-    }
-  };
+  const today=new Date().toISOString().split('T')[0];
+  const payload={data:{type:'Expense',attributes:{amount:1,date:today,description:'PRUEBA API FacturaScan - eliminar',receiptNumber:'TEST-001',useInCashCount:false,paymentDate:today},relationships:{expenseCategory:{data:{id:cats[0].id,type:'ExpenseCategory'}},...(pms.length?{paymentMethod:{data:{id:pms[0].id,type:'PaymentMethod'}}}:{})}}};
   try {
-    const result = await apiPost('/expenses', payload);
-    document.getElementById('test-res').innerHTML =
-      '<div class="al al-ok"><span class="ai">✓</span><div><strong>¡Gasto creado! ID: ' + (result.data?.id||'?') + '</strong> — Verificalo en FUDO → Gastos y eliminalo.</div></div>' +
-      '<pre class="jblock">' + JSON.stringify(result, null, 2) + '</pre>';
-  } catch(e) {
-    document.getElementById('test-res').innerHTML =
-      '<div class="al al-err"><span class="ai">✗</span><div>' + esc(e.message) + '</div></div>' +
-      '<pre class="jblock">' + JSON.stringify(payload, null, 2) + '</pre>';
-  } finally { btn.disabled = false; btn.innerHTML = '🧪 Crear gasto de prueba'; }
+    const r=await POST('/expenses',payload);
+    document.getElementById('test-res').innerHTML='<div class="al al-ok"><span class="ai">✓</span><div><strong>¡Gasto creado! ID: '+(r.data?.id||'?')+'</strong><br>Verificalo en FUDO → Gastos.</div></div><pre class="jblock">'+JSON.stringify(r,null,2)+'</pre>';
+  } catch(ex) {
+    document.getElementById('test-res').innerHTML='<div class="al al-err"><span class="ai">✗</span><div>'+e(ex.message)+'</div></div><pre class="jblock">'+JSON.stringify(payload,null,2)+'</pre>';
+  } finally { btn.disabled=false; btn.innerHTML='🧪 Crear gasto de prueba'; }
 }
 
-async function testEndpoint() {
-  const ep  = gv('t-endpoint');
-  const met = document.getElementById('t-method').value;
-  const wrap = document.getElementById('t-res');
-  wrap.innerHTML = '<div class="hint">Ejecutando...</div>';
+async function testEp() {
+  const ep=gv('t-ep'), met=document.getElementById('t-met').value;
+  const wrap=document.getElementById('t-res');
+  wrap.innerHTML='<div class="hint">Ejecutando...</div>';
   try {
-    const data = met === 'GET' ? await apiGet(ep) : await apiPost(ep, {});
-    wrap.innerHTML = '<pre class="jblock">' + JSON.stringify(data, null, 2) + '</pre>';
-  } catch(e) {
-    wrap.innerHTML = '<div class="al al-err"><span class="ai">✗</span><div>' + esc(e.message) + '</div></div>';
+    const d=met==='GET'?await GET(ep):await POST(ep,{});
+    wrap.innerHTML='<pre class="jblock">'+JSON.stringify(d,null,2)+'</pre>';
+  } catch(ex) {
+    wrap.innerHTML='<div class="al al-err"><span class="ai">✗</span><div>'+e(ex.message)+'</div></div>';
   }
 }
 
 // ── Export ────────────────────────────────────────────────
-function exportConfig() {
-  const cfg = {
-    generated: new Date().toISOString(),
-    expense_categories: (S.get('cats')||[]).map(c => ({ id: c.id, name: c.attributes?.name })),
-    payment_methods: (S.get('pms')||[]).filter(p=>p.attributes?.forExpenses).map(p=>({ id: p.id, name: p.attributes?.name, code: p.attributes?.code })),
-    providers: (S.get('provs')||[]).map(p=>({ id: p.id, name: p.attributes?.name, rut: p.attributes?.fiscalNumber }))
-  };
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));
-  a.download = 'fudo_config_dulcitos.json'; a.click();
+function exportCfg() {
+  const cfg={generated:new Date().toISOString(),expense_categories:(S.g('cats')||[]).map(c=>({id:c.id,name:c.attributes?.name})),payment_methods:(S.g('pms')||[]).filter(p=>p.attributes?.forExpenses).map(p=>({id:p.id,name:p.attributes?.name,code:p.attributes?.code})),providers:(S.g('provs')||[]).map(p=>({id:p.id,name:p.attributes?.name,rut:p.attributes?.fiscalNumber}))};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'}));
+  a.download='fudo_config_dulcitos.json'; a.click();
 }
 
-// ── Token card ────────────────────────────────────────────
-function showTokenCard(token, exp) {
-  document.getElementById('token-card').style.display = 'block';
-  document.getElementById('tok-val').textContent = token.substring(0,50) + '...';
+// ── Token display ─────────────────────────────────────────
+function showTok(token, exp) {
+  document.getElementById('tok-display').style.display='block';
+  document.getElementById('tok-val').textContent=token.substring(0,50)+'...';
   if (exp) {
-    document.getElementById('tok-exp').textContent = new Date(exp*1000).toLocaleString('es-CL');
-    const tick = () => {
-      const rem = exp - Math.floor(Date.now()/1000);
-      if (rem <= 0) { document.getElementById('tok-rem').textContent = 'EXPIRADO'; document.getElementById('exp-fill').className = 'exp-fill danger'; return; }
-      const h = Math.floor(rem/3600), m = Math.floor((rem%3600)/60);
-      document.getElementById('tok-rem').textContent = h + 'h ' + m + 'm restantes';
-      const pct = Math.min(100, (rem/86400)*100);
-      const f = document.getElementById('exp-fill');
-      f.style.width = pct + '%';
-      f.className = 'exp-fill' + (pct<15?' danger':pct<40?' warn':'');
+    document.getElementById('tok-exp').textContent=new Date(exp*1000).toLocaleString('es-CL');
+    const tick=()=>{
+      const rem=exp-Math.floor(Date.now()/1000);
+      if (rem<=0){document.getElementById('tok-rem').textContent='EXPIRADO';document.getElementById('exp-f').className='exp-f d';return;}
+      const h=Math.floor(rem/3600),m=Math.floor((rem%3600)/60);
+      document.getElementById('tok-rem').textContent=h+'h '+m+'m';
+      const pct=Math.min(100,(rem/86400)*100);
+      const f=document.getElementById('exp-f');
+      f.style.width=pct+'%';
+      f.className='exp-f'+(pct<15?' d':pct<40?' w':'');
     };
-    tick(); setInterval(tick, 60000);
-  } else {
-    document.getElementById('tok-exp').textContent = '24h desde que lo generaste en FUDO';
-    document.getElementById('tok-rem').textContent = 'Generá uno nuevo cuando expire';
-    document.getElementById('exp-fill').style.width = '70%';
+    tick(); setInterval(tick,60000);
   }
 }
 
-// ── UI helpers ────────────────────────────────────────────
-function showTab(name) {
-  ['config','catalogo','test'].forEach(t => {
-    document.getElementById('tab-'+t).className = 'sec' + (t===name?' active':'');
-    document.getElementById('tab-btn-'+t).className = 'tab' + (t===name?' active':'');
+// ── UI ────────────────────────────────────────────────────
+function showTab(n) {
+  ['config','catalogo','test'].forEach(t=>{
+    document.getElementById('tab-'+t).className='sec'+(t===n?' active':'');
+    document.getElementById('tb-'+t).className='tab'+(t===n?' active':'');
   });
 }
-
-function setDot(color, label) {
-  document.getElementById('dot').className = 'dot' + (color==='green'?' green':color==='red'?' red':' yellow');
-  document.getElementById('conn-lbl').textContent = label;
+function setDot(c,l){
+  document.getElementById('dot').className='dot'+(c==='g'?' g':c==='r'?' r':' y');
+  document.getElementById('clbl').textContent=l;
 }
-
-function showAl(id, cls, icon, msg) {
-  const e = document.getElementById(id);
-  if (e) e.innerHTML = '<div class="al ' + cls + '"><span class="ai">' + icon + '</span><div>' + msg + '</div></div>';
+function showAl(id,cls,icon,msg){
+  const el=document.getElementById(id);
+  if(el) el.innerHTML='<div class="al '+cls+'"><span class="ai">'+icon+'</span><div>'+msg+'</div></div>';
 }
-
-function saveCreds() {
-  const token = gv('f-token');
-  if (!token) return showAl('alert-creds','al-warn','⚠','Pegá el token primero.');
-  S.set('creds', { token });
-  showAl('alert-creds','al-ok','✓','Token guardado en tu navegador.');
+function saveCreds(){
+  const key=gv('f-key'),sec=gv('f-sec');
+  if(!key||!sec) return showAl('acreds','al-warn','⚠','Ingresá apiKey y apiSecret.');
+  S.s('creds',{key,sec});
+  showAl('acreds','al-ok','✓','Credenciales guardadas en tu navegador.');
 }
-
-function gv(id) { const e = document.getElementById(id); return e ? e.value.trim() : ''; }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function gv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ── Init ──────────────────────────────────────────────────
-(function init() {
-  const c = S.get('creds');
-  if (c?.token) {
-    document.getElementById('f-token').value = c.token;
-    setDot('yellow', 'Token guardado — hacé clic en Verificar');
-    showTokenCard(c.token);
+(function(){
+  const c=S.g('creds');
+  if(c?.key) document.getElementById('f-key').value=c.key;
+  if(c?.sec) document.getElementById('f-sec').value=c.sec;
+  const td=S.g('td');
+  if(td?.token){
+    const now=Math.floor(Date.now()/1000);
+    if(td.exp&&td.exp>now){setDot('g','Conectado ✓');showTok(td.token,td.exp);}
+    else setDot('y','Token vencido — reconectá');
   }
-  const cats = S.get('cats') || [], pms = S.get('pms') || [], provs = S.get('provs') || [];
-  if (cats.length || pms.length || provs.length) renderCatalog(cats, pms, provs);
+  const cats=S.g('cats')||[],pms=S.g('pms')||[],provs=S.g('provs')||[];
+  if(cats.length||pms.length||provs.length) renderCat(cats,pms,provs);
 })();
 </script>
 </body>
