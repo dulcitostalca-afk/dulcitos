@@ -148,6 +148,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
     <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
       <button class="btn btn-o" onclick="saveCreds()">💾 Guardar</button>
       <button class="btn btn-p" id="btn-con" onclick="connect()">🔌 Conectar con FUDO</button>
+      <button class="btn btn-g" onclick="saveCredsToWorker()">☁️ Guardar en Worker</button>
     </div>
   </div>
 
@@ -312,7 +313,33 @@ async function getAll(ep) {
 }
 
 // ── Connect ───────────────────────────────────────────────
-async function connect() {
+async function saveCredsToWorker() {
+  const key = gv('f-key'), sec = gv('f-sec');
+  if (!key || !sec) return showAl('acreds','al-err','✗','Ingresá el apiKey y apiSecret primero.');
+  const btn = event.target;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Guardando...';
+  try {
+    const res = await fetch('https://fudo-proxy.dulcitostalca.workers.dev/save-creds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: key, apiSecret: sec })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      S.s('td', { token: data.token, exp: data.exp });
+      showTok(data.token, data.exp);
+      setDot('g', 'Conectado ✓');
+      showAl('acreds','al-ok','✓','¡Credenciales guardadas en Cloudflare! El token se renueva automáticamente desde ahora.');
+      await syncAll();
+    } else {
+      showAl('acreds','al-err','✗', JSON.stringify(data));
+    }
+  } catch(e) {
+    showAl('acreds','al-err','✗', e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = '☁️ Guardar en Worker';
+  }
+}
   const key = gv('f-key'), sec = gv('f-sec');
   if (!key || !sec) return showAl('acreds','al-err','✗','Ingresá el apiKey y el apiSecret.');
   const btn = document.getElementById('btn-con');
