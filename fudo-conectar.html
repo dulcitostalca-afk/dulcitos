@@ -380,7 +380,7 @@ async function syncAll() {
   showAl('acat','al-info','⏳','Sincronizando catálogo desde FUDO...');
   try {
     const [cats,pms,provs] = await Promise.all([
-      getAll('/expense-categories'),
+      getAll('/expense-categories?fields[expenseCategory]=name,financialCategory'),
       getAll('/payment-methods'),
       getAll('/providers')
     ]);
@@ -402,7 +402,7 @@ function renderCat(cats,pms,provs) {
   document.getElementById('c-sync').textContent=sync?new Date(sync).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}):'—';
   document.getElementById('n-cats').textContent=cats.length+' categorías';
   document.getElementById('b-cats').innerHTML=cats.map(c=>
-    '<tr><td><span class="idb">'+e(c.id)+'</span></td><td style="font-family:\'DM Sans\',sans-serif;">'+e(c.attributes?.name||'—')+'</td><td>'+e(c.attributes?.financialType||'—')+'</td></tr>'
+    '<tr><td><span class="idb">'+e(c.id)+'</span></td><td style="font-family:\'DM Sans\',sans-serif;">'+e(c.attributes?.name||'—')+'</td><td>'+e(c.attributes?.financialCategory||'—')+'</td></tr>'
   ).join('')||'<tr><td colspan="3" style="color:var(--text-muted);padding:12px;">Sin datos</td></tr>';
   document.getElementById('n-pms').textContent=pms.length+' métodos';
   document.getElementById('b-pms').innerHTML=pms.sort((a,b)=>(b.attributes?.forExpenses?1:0)-(a.attributes?.forExpenses?1:0)).map(p=>
