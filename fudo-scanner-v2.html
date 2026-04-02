@@ -193,23 +193,13 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 
 <!-- STEP 1 -->
 <div class="section active" id="step1">
-  <div class="card">
-    <div class="cheader">
-      <div class="ctitle">⚙ Conexión FUDO</div>
-      <button class="toggle-link" id="cfg-tog" onclick="toggleEl('cfg-body','cfg-tog','▾ configurar','▸ configurar')">▾ configurar</button>
+
+  <div id="fudo-status-bar" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;" id="fudo-status-text">
+      <span style="width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;" id="fudo-status-dot"></span>
+      Verificando conexión con FUDO...
     </div>
-    <div class="collapsible open" id="cfg-body">
-      <div id="alert-cfg"></div>
-      <div class="alert al-info"><span class="a-i">ℹ</span><div>Solicitá a soporte de FUDO la activación de la <strong>"API de propósito general"</strong>. Luego generá tu token en <em>Administración → Usuarios → Establecer API Secret</em>.</div></div>
-      <div class="frow">
-        <div class="field"><label>URL de tu cuenta FUDO</label><input type="url" id="cfg-url" placeholder="https://mirestaurante.fudo.com.ar"></div>
-        <div class="field"><label>API Token</label><input type="password" id="cfg-token" placeholder="••••••••••••••••"></div>
-      </div>
-      <div class="frow one">
-        <div class="field"><label>Categoría FUDO por defecto</label><input type="text" id="cfg-cat" value="Compra de Mercadería"></div>
-      </div>
-      <button class="btn btn-o" onclick="saveConfig()" style="margin-top:4px;">💾 Guardar configuración</button>
-    </div>
+    <a href="fudo-conectar.html" style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;text-decoration:underline;">configurar</a>
   </div>
 
   <div class="card">
@@ -346,6 +336,43 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
       <div class="ti"><div class="tl">Costo real</div><div class="tv hi" id="t-real">$0</div></div>
     </div>
   </div>
+  <div class="card">
+    <div class="ctitle">📋 Datos del gasto en FUDO</div>
+    <div class="frow">
+      <div class="field">
+        <label>Categoría de gasto</label>
+        <select id="fudo-cat">
+          <option value="">Seleccionar categoría...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Medio de pago</label>
+        <select id="fudo-pm">
+          <option value="">Seleccionar medio...</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow one">
+      <div class="field">
+        <label>Comentario</label>
+        <input type="text" id="fudo-comment" placeholder="Ej: factura semanal, compra especial...">
+      </div>
+    </div>
+    <div class="frow">
+      <div class="field">
+        <label>Estado del pago</label>
+        <select id="fudo-status">
+          <option value="pending">⏳ Pendiente</option>
+          <option value="paid" selected>✓ Pagado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Fecha de pago</label>
+        <input type="date" id="fudo-paydate">
+      </div>
+    </div>
+  </div>
+
   <div class="arow">
     <button class="btn btn-o" onclick="goTo('step2',2)">← Ajustar</button>
     <button class="btn btn-g" onclick="sendToFudo()">🚀 Cargar en FUDO →</button>
@@ -653,6 +680,7 @@ function calcFinalCosts(){
     : freightExternal;
 
   renderCosts(finalCosts, totalFlete);
+  loadFudoCatalog();
   goTo('step3',3);
 }
 
@@ -680,28 +708,107 @@ function renderCosts(costs,freight){
   el('t-flete').textContent=peso(freight);el('t-real').textContent=peso(sR);
 }
 
+// ── Load FUDO catalog from localStorage (shared with fudo-conectar) ──
+function loadFudoCatalog(){
+  try {
+    const cats = JSON.parse(localStorage.getItem('fd_cats')||'[]');
+    const pms  = JSON.parse(localStorage.getItem('fd_pms')||'[]').filter(p=>p.attributes?.forExpenses);
+    const catSel = el('fudo-cat');
+    const pmSel  = el('fudo-pm');
+    if(cats.length){
+      catSel.innerHTML = '<option value="">Elegir categoría...</option>' +
+        cats.map(c=>`<option value="${c.id}">${esc(c.attributes?.name||c.id)}</option>`).join('');
+      // Default: Minimarket (id 1) para Coca Cola
+      if(activePat==='coca_cola') catSel.value='1';
+    }
+    if(pms.length){
+      pmSel.innerHTML = '<option value="">Elegir medio de pago...</option>' +
+        pms.map(p=>`<option value="${p.id}">${esc(p.attributes?.name||p.id)}</option>`).join('');
+    }
+    // Set today as payment date
+    el('fudo-paydate').value = new Date().toISOString().split('T')[0];
+  } catch(e){}
+}
+
+// ── Get token from Worker or localStorage ──────────────────
+async function getFudoToken(){
+  // Try localStorage first
+  const td = JSON.parse(localStorage.getItem('fd_td')||'null');
+  if(td?.token){
+    const now = Math.floor(Date.now()/1000);
+    if(td.exp && (td.exp - now) > 300) return td.token;
+  }
+  // Try Worker
+  const res = await fetch('https://fudo-proxy.dulcitostalca.workers.dev/token');
+  if(res.ok){
+    const data = await res.json();
+    if(data.token){
+      localStorage.setItem('fd_td', JSON.stringify({token:data.token,exp:data.exp}));
+      return data.token;
+    }
+  }
+  throw new Error('Sin token. Conectá FUDO primero en la herramienta FUDO Conectar.');
+}
+
 // Send to FUDO
 async function sendToFudo(){
-  const cfg=JSON.parse(localStorage.getItem('fsc2')||'{}');
-  if(!cfg.url||!cfg.tok) return alert2('alert3','al-err','✗','Configurá la URL y token de FUDO primero.');
+  const catId = el('fudo-cat')?.value;
+  const pmId  = el('fudo-pm')?.value;
+  if(!catId) return alert2('alert3','al-err','✗','Elegí una categoría de gasto.');
+
   goTo('step-send',null);
-  const payload={
-    provider:v('f-prov'),rut:v('f-rut'),receipt_number:v('f-num'),date:v('f-fecha'),category:v('f-cat'),
-    freight:{company:v('fr-empresa'),receipt:v('fr-num'),total:parseFloat(el('fr-total').value)||0},
-    items:finalCosts.map(c=>({description:c.desc,quantity:c.cant,net_unit_price:c.cant>0?c.neto/c.cant:0,tax_type:c.taxKey,taxes_amount:c.iva+c.extra,freight_share:c.fShare,real_cost:c.costReal,real_cost_unit:c.costRealUnit})),
-    totals:{net:finalCosts.reduce((s,c)=>s+c.neto,0),taxes:finalCosts.reduce((s,c)=>s+c.iva+c.extra,0),freight:parseFloat(el('fr-total').value)||0,real_total:finalCosts.reduce((s,c)=>s+c.costReal,0)},
-    notes:'Cargado con FacturaScan v2 · patrón:'+activePat
-  };
-  try{
-    const url=cfg.url.replace(/\/$/,'');
-    const res=await fetch(`${url}/api/v1/expenses`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.tok,'X-API-Secret':cfg.tok},
-      body:JSON.stringify(payload)
+
+  try {
+    const token = await getFudoToken();
+    const PROXY = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
+    const API   = 'https://api.fu.do/v1alpha1';
+    const today = new Date().toISOString().split('T')[0];
+    const paydate = el('fudo-paydate')?.value || today;
+    const status  = el('fudo-status')?.value || 'paid';
+    const comment = v('fudo-comment') || ('FacturaScan · ' + v('f-prov') + ' · ' + v('f-num'));
+    const totalReal = finalCosts.reduce((s,c)=>s+c.costReal,0);
+
+    // Build JSON:API payload
+    const payload = {
+      data: {
+        type: 'Expense',
+        attributes: {
+          amount: Math.round(totalReal),
+          date: v('f-fecha').split('/').reverse().join('-') || today,
+          description: comment,
+          receiptNumber: v('f-num') || '',
+          useInCashCount: false,
+          paymentDate: status === 'paid' ? paydate : null,
+        },
+        relationships: {
+          expenseCategory: { data: { id: catId, type: 'ExpenseCategory' } },
+          ...(pmId ? { paymentMethod: { data: { id: pmId, type: 'PaymentMethod' } } } : {})
+        }
+      }
+    };
+
+    const res = await fetch(PROXY + encodeURIComponent(API + '/expenses'), {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
-    if(res.ok){const d=await res.json().catch(()=>({}));showSuccess(true,payload,d);}
-    else{const t=await res.text();showSuccess(false,payload,{status:res.status,msg:t});}
-  }catch(e){showSuccess(false,payload,{status:'Error de red/CORS',msg:e.message});}
+
+    const txt = await res.text();
+    let data; try { data=JSON.parse(txt); } catch { data={raw:txt}; }
+
+    if(res.ok){
+      showSuccess(true, { provider:v('f-prov'), receipt_number:v('f-num'), date:v('f-fecha'), totals:{real_total:totalReal} }, data);
+    } else {
+      showSuccess(false, { provider:v('f-prov'), receipt_number:v('f-num'), date:v('f-fecha'), totals:{real_total:totalReal} }, {status:res.status,msg:txt});
+    }
+  } catch(e) {
+    goTo('step3',3);
+    alert2('alert3','al-err','✗', e.message);
+  }
 }
 
 function showSuccess(ok,payload,extra){
@@ -752,7 +859,28 @@ function peso(n){return '$'+Math.round(n||0).toLocaleString('es-CL');}
 function setConf(f,val){const e=el('c-'+f);if(!e)return;e.style.width=val+'%';e.className='cfill'+(val<60?' low':val<85?' med':'');}
 function alert2(tid,cls,icon,msg){const e=el(tid);if(e)e.innerHTML=`<div class="alert ${cls}"><span class="a-i">${icon}</span><div>${msg}</div></div>`;}
 
-loadConfig();
+// Init
+(function loadConfig(){
+  const cfg = JSON.parse(localStorage.getItem('fsc2')||'{}');
+  if(cfg.cat) sv('f-cat', cfg.cat);
+  // Check FUDO connection status
+  const td = JSON.parse(localStorage.getItem('fd_td')||'null');
+  const dot  = document.getElementById('fudo-status-dot');
+  const text = document.getElementById('fudo-status-text');
+  if(td?.token){
+    const now = Math.floor(Date.now()/1000);
+    if(td.exp && td.exp > now){
+      dot.style.background = '#2d9e6b';
+      text.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#2d9e6b;display:inline-block;"></span> FUDO conectado ✓';
+    } else {
+      dot.style.background = '#d4a017';
+      text.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#d4a017;display:inline-block;"></span> Token vencido — se renovará automáticamente';
+    }
+  } else {
+    dot.style.background = '#e85d3a';
+    text.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#e85d3a;display:inline-block;"></span> FUDO sin configurar — configurá la conexión primero';
+  }
+})();
 </script>
 </body>
 </html>
