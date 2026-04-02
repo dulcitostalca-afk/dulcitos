@@ -530,7 +530,9 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
 Campos no encontrados: usar "" o 0. SOLO el JSON.`;
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const PROXY = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
+    const ANTHROPIC_URL = PROXY + encodeURIComponent('https://api.anthropic.com/v1/messages');
+    const res=await fetch(ANTHROPIC_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
@@ -543,7 +545,7 @@ Campos no encontrados: usar "" o 0. SOLO el JSON.`;
       })
     });
     clearInterval(iv);
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    if(!res.ok) throw new Error('HTTP '+res.status+': '+await res.text());
     const d=await res.json();
     const raw=d.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim();
     extracted=JSON.parse(raw);
