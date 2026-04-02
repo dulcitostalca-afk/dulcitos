@@ -147,8 +147,8 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
     </div>
     <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
       <button class="btn btn-o" onclick="saveCreds()">💾 Guardar</button>
-      <button class="btn btn-p" id="btn-con" onclick="connect()">🔌 Conectar con FUDO</button>
-      <button class="btn btn-g" id="btn-worker" onclick="saveCredsToWorker()">☁️ Guardar en Worker</button>
+      <button class="btn btn-p" id="btn-con">🔌 Conectar con FUDO</button>
+      <button class="btn btn-g" id="btn-worker">☁️ Guardar en Worker</button>
     </div>
   </div>
 
@@ -204,7 +204,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="card">
     <div class="ctitle">🧪 Crear gasto de prueba ($1)</div>
     <div class="al al-warn" style="margin-bottom:14px;"><span class="ai">⚠</span><div>Crea un gasto REAL de $1 en FUDO para verificar la conexión. Podés eliminarlo después.</div></div>
-    <button class="btn btn-p" id="btn-test" onclick="testExpense()">🧪 Crear gasto de prueba</button>
+    <button class="btn btn-p" id="btn-test">🧪 Crear gasto de prueba</button>
     <div id="test-res" style="margin-top:14px;"></div>
   </div>
   <div class="card">
@@ -508,6 +508,11 @@ function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
   }
   const cats=S.g('cats')||[],pms=S.g('pms')||[],provs=S.g('provs')||[];
   if(cats.length||pms.length||provs.length) renderCat(cats,pms,provs);
+
+  // Event listeners — evita problemas de scope con onclick en GitHub Pages
+  document.getElementById('btn-con').addEventListener('click', connect);
+  document.getElementById('btn-worker').addEventListener('click', saveCredsToWorker);
+  document.getElementById('btn-test').addEventListener('click', testExpense);
 })();
 </script>
 </body>
