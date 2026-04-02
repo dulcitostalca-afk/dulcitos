@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dulcitos · Panel de Gestión</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#d8d6cc;--accent:#1a1a2e;--accent2:#e85d3a;--accent3:#2d9e6b;--accent4:#d4a017;--text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#9a9a9a;--radius:16px;--shadow:0 2px 12px rgba(0,0,0,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.app{max-width:680px;margin:0 auto;padding:32px 16px 80px;}
+
+/* Header */
+.hero{text-align:center;margin-bottom:48px;}
+.hero-logo{width:72px;height:72px;background:var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:5px 5px 0 var(--accent2);}
+.hero h1{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;}
+.hero p{font-size:15px;color:var(--text-dim);max-width:380px;margin:0 auto;}
+.hero-date{font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);margin-top:10px;}
+
+/* Tool cards */
+.tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
+@media(max-width:480px){.tools-grid{grid-template-columns:1fr;}}
+
+.tool-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px;text-decoration:none;color:var(--text);transition:all .2s;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);opacity:0;transition:opacity .2s;}
+.tool-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.1);}
+.tool-card:hover::before{opacity:1;}
+.tool-card.green::before{background:var(--accent3);}
+.tool-card.green:hover{border-color:var(--accent3);}
+.tool-card.orange::before{background:var(--accent4);}
+.tool-card.orange:hover{border-color:var(--accent4);}
+.tool-card.red::before{background:var(--accent2);}
+.tool-card.red:hover{border-color:var(--accent2);}
+
+.tool-icon{font-size:32px;display:block;}
+.tool-title{font-size:15px;font-weight:700;letter-spacing:-.3px;}
+.tool-desc{font-size:12px;color:var(--text-dim);line-height:1.5;}
+.tool-tag{display:inline-block;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:4px;background:var(--surface2);color:var(--text-muted);margin-top:4px;}
+
+/* Status bar */
+.status-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;box-shadow:var(--shadow);}
+.status-left{display:flex;align-items:center;gap:10px;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#ccc;}
+.status-dot.green{background:var(--accent3);}
+.status-dot.red{background:var(--accent2);}
+.status-text{font-size:13px;font-weight:600;}
+.status-sub{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:1px;}
+.btn-small{background:var(--accent);color:white;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;box-shadow:2px 2px 0 var(--accent2);transition:all .15s;}
+.btn-small:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--accent2);}
+
+/* Tips */
+.tips{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);}
+.tip-title{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace;margin-bottom:12px;}
+.tip-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);}
+.tip-item:last-child{border-bottom:none;}
+.tip-emoji{font-size:16px;flex-shrink:0;margin-top:1px;}
+.tip-text{font-size:13px;color:var(--text-dim);line-height:1.5;}
+.tip-text strong{color:var(--text);}
+
+/* Footer */
+footer{text-align:center;margin-top:40px;font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-logo">🥐</div>
+    <h1>Dulcitos Talca</h1>
+    <p>Panel de gestión · Herramientas de automatización conectadas con FUDO</p>
+    <div class="hero-date" id="current-date"></div>
+  </div>
+
+  <!-- FUDO Status -->
+  <div class="status-bar" id="fudo-status">
+    <div class="status-left">
+      <div class="status-dot" id="fudo-dot"></div>
+      <div>
+        <div class="status-text" id="fudo-status-text">Verificando conexión con FUDO...</div>
+        <div class="status-sub" id="fudo-status-sub">api.fu.do/v1alpha1</div>
+      </div>
+    </div>
+    <a href="fudo-conectar.html" class="btn-small">⚙ Configurar</a>
+  </div>
+
+  <!-- Tools -->
+  <div class="tools-grid">
+
+    <a href="fudo-scanner-v2.html" class="tool-card">
+      <span class="tool-icon">🧾</span>
+      <div class="tool-title">FacturaScan</div>
+      <div class="tool-desc">Escaneá facturas con la cámara. Calcula IVA, ILA, flete e impuestos automáticamente.</div>
+      <span class="tool-tag">📷 foto → FUDO</span>
+    </a>
+
+    <a href="fudo-gastos-rapidos.html" class="tool-card green">
+      <span class="tool-icon">💸</span>
+      <div class="tool-title">Gastos Rápidos</div>
+      <div class="tool-desc">Cargá gastos sin factura: sueldos, servicios, arriendo, limpieza y más.</div>
+      <span class="tool-tag">📅 con Google Calendar</span>
+    </a>
+
+    <a href="fudo-matching.html" class="tool-card orange">
+      <span class="tool-icon">🔗</span>
+      <div class="tool-title">Matching de Productos</div>
+      <div class="tool-desc">Relacioná los ítems de facturas con productos e ingredientes de tu FUDO.</div>
+      <span class="tool-tag">🧠 1.362 productos</span>
+    </a>
+
+    <a href="fudo-conectar.html" class="tool-card red">
+      <span class="tool-icon">🔌</span>
+      <div class="tool-title">FUDO Conectar</div>
+      <div class="tool-desc">Configurá la conexión con la API de FUDO y sincronizá tu catálogo.</div>
+      <span class="tool-tag">⚙ configuración</span>
+    </a>
+
+  </div>
+
+  <!-- Tips -->
+  <div class="tips">
+    <div class="tip-title">💡 Flujo recomendado para cargar una factura</div>
+    <div class="tip-item">
+      <span class="tip-emoji">1️⃣</span>
+      <div class="tip-text"><strong>Abrí FacturaScan</strong> → seleccioná el patrón del proveedor (ej: Coca Cola Embonor) → tomá foto de la factura</div>
+    </div>
+    <div class="tip-item">
+      <span class="tip-emoji">2️⃣</span>
+      <div class="tip-text"><strong>Revisá los datos extraídos</strong> → la IA calcula IVA, ILA y flete automáticamente → ajustá si es necesario</div>
+    </div>
+    <div class="tip-item">
+      <span class="tip-emoji">3️⃣</span>
+      <div class="tip-text"><strong>Usá el Matching</strong> → relacioná los ítems de la factura con tus productos/ingredientes en FUDO</div>
+    </div>
+    <div class="tip-item">
+      <span class="tip-emoji">4️⃣</span>
+      <div class="tip-text"><strong>Cargá en FUDO</strong> → el gasto se registra con todos los costos reales, impuestos y stock actualizado</div>
+    </div>
+  </div>
+
+  <footer>
+    Dulcitos Talca · Eibar & Rosana Viscaya · Talca, Maule, Chile<br>
+    Construido con FacturaScan v2 · FUDO API v1alpha1
+  </footer>
+
+</div>
+
+<script>
+// Fecha actual
+const now = new Date();
+document.getElementById('current-date').textContent =
+  now.toLocaleDateString('es-CL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+// Verificar estado de conexión con FUDO
+function checkFudoStatus() {
+  const creds = null;
+  try {
+    const raw = localStorage.getItem('fd_creds');
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c?.token) {
+        document.getElementById('fudo-dot').className = 'status-dot green';
+        document.getElementById('fudo-status-text').textContent = 'FUDO conectado ✓';
+        document.getElementById('fudo-status-sub').textContent = 'Token activo · api.fu.do/v1alpha1';
+        return;
+      }
+    }
+  } catch(e) {}
+  document.getElementById('fudo-dot').className = 'status-dot red';
+  document.getElementById('fudo-status-text').textContent = 'FUDO sin configurar';
+  document.getElementById('fudo-status-sub').textContent = 'Hacé clic en Configurar para conectar';
+}
+
+checkFudoStatus();
+</script>
+</body>
+</html>

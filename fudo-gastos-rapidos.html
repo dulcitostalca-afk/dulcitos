@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gastos Rápidos · FUDO</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--surface3:#e8e7df;
+  --border:#d8d6cc;--border2:#c8c6ba;
+  --accent:#1a1a2e;--accent2:#e85d3a;--accent3:#2d9e6b;--accent4:#d4a017;
+  --text:#1a1a1a;--text-dim:#5a5a5a;--text-muted:#9a9a9a;
+  --radius:14px;--radius-sm:8px;--shadow:0 2px 12px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.app{max-width:720px;margin:0 auto;padding:24px 16px 100px;}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-mark{width:44px;height:44px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;box-shadow:3px 3px 0 var(--accent2);}
+.logo-text h1{font-size:17px;font-weight:700;letter-spacing:-.5px;}
+.logo-text span{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+.vbadge{background:var(--accent);color:white;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
+.ctitle{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;font-family:'DM Mono',monospace;margin-bottom:14px;}
+.cheader{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.frow.three{grid-template-columns:1fr 1fr 1fr;}
+.frow.one{grid-template-columns:1fr;}
+@media(max-width:500px){.frow,.frow.three{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
+
+input[type=text],input[type=number],input[type=date],select,textarea{
+  background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 13px;font-size:14px;color:var(--text);font-family:'DM Mono',monospace;
+  outline:none;transition:border-color .2s,background .2s;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:white;}
+.hint{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-p{background:var(--accent);color:white;box-shadow:3px 3px 0 var(--accent2);}
+.btn-p:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--accent2);}
+.btn-g{background:var(--accent3);color:white;box-shadow:3px 3px 0 #1a7a4a;}
+.btn-g:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 #1a7a4a;}
+.btn-o{background:white;color:var(--text);border:1.5px solid var(--border2);}
+.btn-o:hover{border-color:var(--accent);color:var(--accent);}
+.btn-warn{background:#fffbeb;color:#92400e;border:1.5px solid #fde68a;}
+.btn-danger{background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;}
+.btn-full{width:100%;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+
+.alert{border-radius:var(--radius-sm);padding:11px 15px;font-size:13px;margin-bottom:12px;display:flex;gap:9px;align-items:flex-start;animation:fdin .2s ease;}
+@keyframes fdin{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.ai{font-size:14px;flex-shrink:0;margin-top:1px;}
+.al-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;}
+.al-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;}
+.al-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;}
+.al-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;}
+
+hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
+
+/* Recurring expenses grid */
+.recurrentes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:6px;}
+.rec-card{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:all .2s;position:relative;}
+.rec-card:hover{border-color:var(--accent);background:#f0effe;transform:translateY(-1px);}
+.rec-card.selected{border-color:var(--accent3);background:#f0fdf4;}
+.rec-icon{font-size:22px;margin-bottom:6px;display:block;}
+.rec-name{font-size:12px;font-weight:700;margin-bottom:2px;}
+.rec-cat{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+.rec-monto{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent3);margin-top:4px;}
+.rec-del{position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;transition:opacity .15s;}
+.rec-card:hover .rec-del{opacity:1;}
+.rec-del:hover{background:#fef2f2;color:var(--accent2);}
+
+/* Estado badges */
+.estado-toggle{display:flex;gap:8px;margin-bottom:0;}
+.estado-btn{flex:1;padding:9px;border-radius:var(--radius-sm);border:1.5px solid var(--border2);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-align:center;background:white;color:var(--text-dim);}
+.estado-btn.active-pagado{background:#f0fdf4;border-color:#86efac;color:#15803d;}
+.estado-btn.active-pendiente{background:#fffbeb;border-color:#fde68a;color:#92400e;}
+
+/* Monto grande */
+.monto-display{font-size:32px;font-weight:800;font-family:'DM Mono',monospace;color:var(--accent);text-align:center;padding:16px;background:var(--surface2);border-radius:var(--radius-sm);border:1.5px solid var(--border);margin-bottom:4px;cursor:text;min-height:64px;display:flex;align-items:center;justify-content:center;}
+.monto-display.has-value{color:var(--accent3);}
+
+/* History table */
+.htbl{width:100%;border-collapse:collapse;font-size:13px;}
+.htbl th{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;text-align:left;padding:8px 9px;border-bottom:2px solid var(--border);font-family:'DM Mono',monospace;}
+.htbl td{padding:9px 9px;border-bottom:1px solid var(--surface2);vertical-align:middle;}
+.htbl tr:last-child td{border-bottom:none;}
+.htbl tr:hover td{background:var(--surface2);}
+.estado-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;font-family:'DM Mono',monospace;}
+.eb-pagado{background:#dcfce7;color:#15803d;}
+.eb-pendiente{background:#fef9c3;color:#92400e;}
+
+/* Tabs */
+.tabs{display:flex;gap:0;margin-bottom:20px;background:var(--surface3);border-radius:var(--radius-sm);padding:3px;}
+.tab{flex:1;padding:9px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .2s;color:var(--text-muted);}
+.tab.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+
+.section{display:none;}
+.section.active{display:block;animation:fdin .2s ease;}
+
+/* Manage modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:fdin .2s ease;}
+.modal{background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;}
+.modal-footer{display:flex;gap:10px;margin-top:20px;}
+.modal-footer .btn{flex:1;}
+
+/* Collapsible */
+.collapsible{overflow:hidden;transition:max-height .3s ease;}
+.collapsible.open{max-height:600px;}
+.collapsible.closed{max-height:0;}
+.toggle-link{font-size:12px;color:var(--text-muted);cursor:pointer;font-family:'DM Mono',monospace;text-decoration:underline;text-underline-offset:3px;background:none;border:none;padding:0;}
+.toggle-link:hover{color:var(--accent);}
+
+.arow{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.arow .btn{flex:1;min-width:120px;}
+
+/* Success animation */
+.succ-wrap{text-align:center;padding:32px 16px;}
+.succ-check{width:64px;height:64px;border-radius:50%;background:var(--accent3);color:white;font-size:32px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:4px 4px 0 #1a7a4a;animation:popIn .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(0);}to{transform:scale(1);}}
+.succ-wrap h2{font-size:20px;font-weight:700;margin-bottom:6px;}
+.succ-wrap p{color:var(--text-dim);font-size:14px;}
+
+/* Today summary */
+.today-strip{background:var(--accent);color:white;border-radius:var(--radius-sm);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.today-strip .tl{font-size:11px;opacity:.6;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.8px;}
+.today-strip .tv{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">💸</div>
+    <div class="logo-text">
+      <h1>Gastos Rápidos</h1>
+      <span>para FUDO · Dulcitos Talca</span>
+    </div>
+  </div>
+  <div class="vbadge">diario</div>
+</header>
+
+<div id="alert-top"></div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('tab-nuevo', this)">➕ Nuevo gasto</div>
+  <div class="tab" onclick="showTab('tab-historial', this)">📋 Historial</div>
+  <div class="tab" onclick="showTab('tab-config', this)">⚙ Configurar</div>
+</div>
+
+<!-- ── TAB: NUEVO GASTO ── -->
+<div class="section active" id="tab-nuevo">
+
+  <!-- Resumen de hoy -->
+  <div class="today-strip" id="today-strip">
+    <div><div class="tl">Gastado hoy</div><div class="tv" id="today-total">$0</div></div>
+    <div style="text-align:right;"><div class="tl">N° gastos</div><div class="tv" id="today-count">0</div></div>
+  </div>
+
+  <!-- Gastos recurrentes -->
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">⚡ Carga rápida — recurrentes</div>
+      <button class="btn btn-o btn-sm" onclick="openAddRecurrente()">+ Agregar</button>
+    </div>
+    <div class="recurrentes-grid" id="rec-grid"></div>
+    <div class="hint" style="margin-top:8px;">Hacé clic en uno para prellenar el formulario. El monto lo podés editar antes de guardar.</div>
+  </div>
+
+  <!-- Formulario -->
+  <div class="card">
+    <div class="ctitle">📝 Detalle del gasto</div>
+
+    <!-- Estado -->
+    <div class="field" style="margin-bottom:14px;">
+      <label>Estado del pago</label>
+      <div class="estado-toggle">
+        <div class="estado-btn active-pagado" id="btn-pagado" onclick="setEstado('Pagado')">✓ Pagado</div>
+        <div class="estado-btn" id="btn-pendiente" onclick="setEstado('Pendiente')">⏳ Pendiente</div>
+      </div>
+    </div>
+
+    <!-- Monto grande -->
+    <div class="field" style="margin-bottom:14px;">
+      <label>Importe ($)</label>
+      <input type="number" id="f-monto" placeholder="0" style="font-size:22px;font-weight:700;text-align:center;color:var(--accent3);" oninput="updateTodayStrip()">
+    </div>
+
+    <div class="frow">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="f-fecha">
+      </div>
+      <div class="field">
+        <label>Proveedor</label>
+        <input type="text" id="f-proveedor" placeholder="Ej: CGE, Movistar..." list="proveedores-list">
+        <datalist id="proveedores-list"></datalist>
+      </div>
+    </div>
+
+    <div class="frow">
+      <div class="field">
+        <label>Categoría</label>
+        <select id="f-categoria">
+          <option value="">Seleccionar...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Medio de pago</label>
+        <select id="f-medio">
+          <option value="Transferencia">Transferencia</option>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Tarjeta débito">Tarjeta débito</option>
+          <option value="Tarjeta crédito">Tarjeta crédito</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="frow one">
+      <div class="field">
+        <label>Comentario</label>
+        <input type="text" id="f-comentario" placeholder="Ej: local 1150, mes marzo...">
+      </div>
+    </div>
+
+    <!-- Más datos (colapsable) -->
+    <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+      <button class="toggle-link" id="mas-tog" onclick="toggleEl('mas-datos','mas-tog','▾ más datos','▸ más datos')">▸ más datos</button>
+    </div>
+    <div class="collapsible closed" id="mas-datos">
+      <hr>
+      <div class="frow">
+        <div class="field">
+          <label>Fecha de vencimiento</label>
+          <input type="date" id="f-vencimiento">
+        </div>
+        <div class="field">
+          <label>Tipo de comprobante</label>
+          <select id="f-tipo-comp">
+            <option value="">Sin comprobante</option>
+            <option value="Boleta">Boleta</option>
+            <option value="Factura">Factura</option>
+            <option value="Recibo">Recibo</option>
+            <option value="Contrato">Contrato</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow one">
+        <div class="field">
+          <label>N° de comprobante</label>
+          <input type="text" id="f-ncomp" placeholder="Opcional">
+        </div>
+      </div>
+    </div>
+
+    <div class="arow">
+      <button class="btn btn-o" onclick="resetForm()">✕ Limpiar</button>
+      <button class="btn btn-warn" onclick="saveGasto(false)">💾 Guardar local</button>
+      <button class="btn btn-g" onclick="saveGasto(true)" id="btn-fudo">🚀 Cargar en FUDO</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: HISTORIAL ── -->
+<div class="section" id="tab-historial">
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">📋 Gastos registrados</div>
+      <div style="display:flex;gap:8px;">
+        <select id="hist-filtro-mes" onchange="renderHistorial()" style="font-size:12px;padding:5px 10px;">
+          <option value="">Todos los meses</option>
+        </select>
+        <button class="btn btn-o btn-sm" onclick="exportarHistorial()">📥 Exportar</button>
+      </div>
+    </div>
+
+    <!-- Summary chips -->
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;" id="hist-summary"></div>
+
+    <div style="overflow-x:auto;">
+      <table class="htbl">
+        <thead><tr>
+          <th>Fecha</th><th>Proveedor</th><th>Categoría</th><th>Comentario</th><th>Medio</th><th>Estado</th><th>Importe</th><th></th>
+        </tr></thead>
+        <tbody id="hist-body"></tbody>
+      </table>
+    </div>
+    <div id="hist-empty" style="text-align:center;padding:32px;color:var(--text-muted);display:none;">
+      <div style="font-size:32px;margin-bottom:8px;">📭</div>
+      <div style="font-size:14px;">No hay gastos registrados aún.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: CONFIG ── -->
+<div class="section" id="tab-config">
+
+  <!-- FUDO Connection -->
+  <div class="card">
+    <div class="ctitle">🔌 Conexión con FUDO</div>
+    <div class="alert al-warn" style="margin-bottom:14px;"><span class="ai">⚠</span><div>Pedí a FUDO la activación de la <strong>API de propósito general</strong>. Mientras tanto, los gastos se guardan localmente y los podés cargar cuando esté lista.</div></div>
+    <div id="alert-cfg"></div>
+    <div class="frow one">
+      <div class="field">
+        <label>URL de tu cuenta FUDO</label>
+        <input type="text" id="cfg-url" placeholder="https://mirestaurante.fudo.com.ar">
+      </div>
+    </div>
+    <div class="frow one">
+      <div class="field">
+        <label>API Token</label>
+        <input type="password" id="cfg-token" placeholder="••••••••••••••••">
+      </div>
+    </div>
+    <button class="btn btn-p" onclick="saveConfig()" style="margin-top:4px;">💾 Guardar conexión</button>
+  </div>
+
+  <!-- Google Calendar -->
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">📅 Google Calendar</div>
+      <span id="gcal-status-badge" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);">no conectado</span>
+    </div>
+    <div class="alert al-info" style="margin-bottom:14px;"><span class="ai">📅</span><div>Cuando guardás un gasto con fecha de vencimiento, la herramienta crea automáticamente un evento en tu Google Calendar con recordatorio ese mismo día. <strong>Solo necesitás configurarlo una vez.</strong></div></div>
+
+    <div id="gcal-disconnected">
+      <div class="alert al-warn" style="margin-bottom:14px;"><span class="ai">🔑</span>
+        <div>
+          <strong>Cómo obtener tu Client ID de Google:</strong><br><br>
+          1. Entrá a <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent);font-weight:600;">console.cloud.google.com</a><br>
+          2. Creá un proyecto nuevo → ponele "Dulcitos FUDO"<br>
+          3. Buscá <strong>"Google Calendar API"</strong> y hacé clic en Habilitar<br>
+          4. Andá a <strong>Credenciales → Crear credenciales → ID de cliente OAuth 2.0</strong><br>
+          5. Tipo de aplicación: <strong>Aplicación web</strong><br>
+          6. En "Orígenes autorizados" agregá: <code style="background:var(--surface2);padding:2px 5px;border-radius:3px;">https://claude.ai</code><br>
+          7. Copiá el <strong>Client ID</strong> que aparece y pegalo abajo
+        </div>
+      </div>
+      <div class="frow one">
+        <div class="field">
+          <label>Google Client ID</label>
+          <input type="text" id="gcal-client-id" placeholder="xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com">
+          <div class="hint">Lo obtenés en Google Cloud Console (es gratis y el proceso tarda ~5 minutos)</div>
+        </div>
+      </div>
+      <button class="btn btn-p btn-full" onclick="connectGoogleCalendar()" style="margin-top:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Conectar con Google Calendar
+      </button>
+    </div>
+
+    <div id="gcal-connected" style="display:none;">
+      <div class="alert al-ok" style="margin-bottom:14px;"><span class="ai">✓</span><div>Google Calendar conectado. Los eventos de vencimiento se crearán automáticamente al guardar un gasto.</div></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;">
+          <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.8px;">Cuenta conectada</div>
+          <div style="font-size:13px;font-weight:600;margin-top:3px;" id="gcal-email">—</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="disconnectGoogleCalendar()">Desconectar</button>
+      </div>
+
+      <hr style="margin:16px 0;">
+      <div class="ctitle" style="margin-bottom:10px;">📋 Próximos vencimientos en Calendar</div>
+      <div id="gcal-upcoming"></div>
+    </div>
+  </div>
+
+  <!-- Categorías -->
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">📁 Categorías de gastos</div>
+      <button class="btn btn-o btn-sm" onclick="openAddCategoria()">+ Nueva</button>
+    </div>
+    <div id="categorias-list"></div>
+  </div>
+
+  <!-- Proveedores -->
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">🏢 Proveedores frecuentes</div>
+      <button class="btn btn-o btn-sm" onclick="openAddProveedor()">+ Nuevo</button>
+    </div>
+    <div id="proveedores-list-cfg"></div>
+  </div>
+
+</div>
+
+<!-- ── SUCCESS ── -->
+<div class="section" id="sec-success">
+  <div class="card">
+    <div class="succ-wrap">
+      <div class="succ-check">✓</div>
+      <h2 id="succ-title">¡Gasto guardado!</h2>
+      <p id="succ-desc">El gasto fue registrado correctamente.</p>
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button class="btn btn-o btn-full" onclick="showTab('tab-historial', null); showSection('tab-historial');">📋 Ver historial</button>
+        <button class="btn btn-p btn-full" onclick="resetForm(); showTab('tab-nuevo', null); showSection('tab-nuevo');">➕ Nuevo gasto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add recurrente ── -->
+<div id="modal-rec" style="display:none;">
+  <div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-rec')">
+    <div class="modal">
+      <div class="modal-title">⚡ Gasto recurrente</div>
+      <div class="field" style="margin-bottom:12px;"><label>Ícono (emoji)</label><input type="text" id="mrec-icon" placeholder="💡" maxlength="2" style="text-align:center;font-size:24px;"></div>
+      <div class="field" style="margin-bottom:12px;"><label>Nombre</label><input type="text" id="mrec-nombre" placeholder="Ej: Luz CGE local 1150"></div>
+      <div class="field" style="margin-bottom:12px;"><label>Proveedor</label><input type="text" id="mrec-prov" placeholder="Ej: CGE" list="proveedores-list"></div>
+      <div class="field" style="margin-bottom:12px;"><label>Categoría</label><select id="mrec-cat"><option value="">Seleccionar...</option></select></div>
+      <div class="field" style="margin-bottom:12px;"><label>Monto habitual ($)</label><input type="number" id="mrec-monto" placeholder="0"><div class="hint">Se puede editar al momento de cargar</div></div>
+      <div class="field" style="margin-bottom:12px;"><label>Comentario predeterminado</label><input type="text" id="mrec-comentario" placeholder="Ej: local 1150"></div>
+      <div class="modal-footer">
+        <button class="btn btn-o" onclick="closeModal('modal-rec')">Cancelar</button>
+        <button class="btn btn-g" onclick="saveRecurrente()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add categoría ── -->
+<div id="modal-cat" style="display:none;">
+  <div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-cat')">
+    <div class="modal">
+      <div class="modal-title">📁 Nueva categoría</div>
+      <div class="field" style="margin-bottom:12px;"><label>Nombre de la categoría</label><input type="text" id="mcat-nombre" placeholder="Ej: Sueldos y RRHH"></div>
+      <div class="modal-footer">
+        <button class="btn btn-o" onclick="closeModal('modal-cat')">Cancelar</button>
+        <button class="btn btn-p" onclick="saveCategoria()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add proveedor ── -->
+<div id="modal-prov" style="display:none;">
+  <div class="modal-overlay" onclick="if(event.target===this)closeModal('modal-prov')">
+    <div class="modal">
+      <div class="modal-title">🏢 Nuevo proveedor</div>
+      <div class="field" style="margin-bottom:12px;"><label>Nombre del proveedor</label><input type="text" id="mprov-nombre" placeholder="Ej: Verisure, Mundo Pacífico..."></div>
+      <div class="modal-footer">
+        <button class="btn btn-o" onclick="closeModal('modal-prov')">Cancelar</button>
+        <button class="btn btn-p" onclick="saveProveedor()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ─── Default data ──────────────────────────────────────────
+const DEFAULT_CATEGORIAS = [
+  'Serv. Básicos: Agua, Luz, Inter, Alarma, telefono, FUDO.',
+  'Arriendo',
+  'Sueldos y Horas Extras',
+  'Mantenimiento y Reparaciones',
+  'Limpieza',
+  'Compra de Mercadería',
+  'Gastos de Oficina',
+  'Otros Gastos',
+];
+
+const DEFAULT_PROVEEDORES = [
+  'CGE','Movistar Telefónica Chile','Entel','WOM','FUDO',
+  'Mundo Pacífico','iCloud','Verisure','Starken','Chilexpress',
+];
+
+const DEFAULT_RECURRENTES = [
+  {icon:'💡', nombre:'Luz CGE', proveedor:'CGE', categoria:'Serv. Básicos: Agua, Luz, Inter, Alarma, telefono, FUDO.', monto:415300, comentario:'local 1150'},
+  {icon:'📱', nombre:'Movistar Internet', proveedor:'Movistar Telefónica Chile', categoria:'Serv. Básicos: Agua, Luz, Inter, Alarma, telefono, FUDO.', monto:57887, comentario:'movistar internet y telefonía'},
+  {icon:'🔐', nombre:'Alarma Verisure', proveedor:'Verisure', categoria:'Serv. Básicos: Agua, Luz, Inter, Alarma, telefono, FUDO.', monto:0, comentario:''},
+  {icon:'☁️', nombre:'iCloud', proveedor:'iCloud', categoria:'Serv. Básicos: Agua, Luz, Inter, Alarma, telefono, FUDO.', monto:0, comentario:''},
+  {icon:'🍽', nombre:'Suscripción FUDO', proveedor:'FUDO', categoria:'Serv. Básicos: Agua, Luz, Inter, Alarma, telefono, FUDO.', monto:49875, comentario:'FUDO'},
+  {icon:'🏠', nombre:'Arriendo', proveedor:'', categoria:'Arriendo', monto:0, comentario:''},
+];
+
+// ─── Storage ───────────────────────────────────────────────
+function get(k, def) { try { return JSON.parse(localStorage.getItem('fg_'+k)) ?? def; } catch { return def; } }
+function set(k, v) { localStorage.setItem('fg_'+k, JSON.stringify(v)); }
+
+function getCategorias() { return get('cats', DEFAULT_CATEGORIAS); }
+function getProveedores() { return get('provs', DEFAULT_PROVEEDORES); }
+function getRecurrentes() { return get('recs', DEFAULT_RECURRENTES); }
+function getGastos() { return get('gastos', []); }
+function getConfig() { return get('cfg', {}); }
+
+// ─── Init ──────────────────────────────────────────────────
+function init() {
+  // Set today's date
+  document.getElementById('f-fecha').value = today();
+  renderCategorias();
+  renderProveedores();
+  renderRecurrentes();
+  renderHistorial();
+  updateTodayStrip();
+  loadConfig();
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ─── Estado ───────────────────────────────────────────────
+let currentEstado = 'Pagado';
+function setEstado(e) {
+  currentEstado = e;
+  document.getElementById('btn-pagado').className = 'estado-btn' + (e==='Pagado'?' active-pagado':'');
+  document.getElementById('btn-pendiente').className = 'estado-btn' + (e==='Pendiente'?' active-pendiente':'');
+}
+
+// ─── Recurrentes ──────────────────────────────────────────
+function renderRecurrentes() {
+  const grid = document.getElementById('rec-grid');
+  const recs = getRecurrentes();
+  if (!recs.length) { grid.innerHTML = '<div class="hint" style="padding:12px;">No hay gastos recurrentes. Agregá uno con el botón +</div>'; return; }
+  grid.innerHTML = recs.map((r, i) => `
+    <div class="rec-card" onclick="loadRecurrente(${i})">
+      <button class="rec-del" onclick="event.stopPropagation();deleteRecurrente(${i})" title="Eliminar">✕</button>
+      <span class="rec-icon">${r.icon||'💸'}</span>
+      <div class="rec-name">${esc(r.nombre)}</div>
+      <div class="rec-cat">${esc(r.proveedor||'—')}</div>
+      ${r.monto ? `<div class="rec-monto">${peso(r.monto)}</div>` : '<div class="rec-monto" style="color:var(--text-muted);">monto variable</div>'}
+    </div>`).join('');
+}
+
+function loadRecurrente(i) {
+  const r = getRecurrentes()[i];
+  if (!r) return;
+  sv('f-proveedor', r.proveedor||'');
+  sv('f-categoria', r.categoria||'');
+  sv('f-monto', r.monto||'');
+  sv('f-comentario', r.comentario||'');
+  sv('f-fecha', today());
+  setEstado('Pagado');
+  document.getElementById('f-monto').focus();
+  document.getElementById('f-monto').select();
+  showAlert('alert-top','al-info','⚡',`Prellenado con "${r.nombre}". Revisá el monto y guardá.`);
+}
+
+function openAddRecurrente() {
+  fillSelectWithCategorias('mrec-cat');
+  openModal('modal-rec');
+}
+
+function saveRecurrente() {
+  const nombre = v('mrec-nombre');
+  if (!nombre) return showAlert('alert-top','al-err','✗','El nombre es obligatorio.');
+  const recs = getRecurrentes();
+  recs.push({
+    icon: v('mrec-icon')||'💸',
+    nombre, proveedor: v('mrec-prov'),
+    categoria: v('mrec-cat'), monto: parseFloat(v('mrec-monto'))||0,
+    comentario: v('mrec-comentario')
+  });
+  set('recs', recs);
+  renderRecurrentes();
+  closeModal('modal-rec');
+  ['mrec-icon','mrec-nombre','mrec-prov','mrec-monto','mrec-comentario'].forEach(id => sv(id,''));
+}
+
+function deleteRecurrente(i) {
+  if (!confirm('¿Eliminar este gasto recurrente?')) return;
+  const recs = getRecurrentes(); recs.splice(i,1); set('recs',recs); renderRecurrentes();
+}
+
+// ─── Categorías ───────────────────────────────────────────
+function renderCategorias() {
+  const cats = getCategorias();
+  // Fill select in form
+  const sel = document.getElementById('f-categoria');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Seleccionar...</option>' + cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if (cur) sel.value = cur;
+
+  // Fill config list
+  const list = document.getElementById('categorias-list');
+  list.innerHTML = cats.map((c,i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;">📁 ${esc(c)}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteCategoria(${i})">✕</button>
+    </div>`).join('') || '<div class="hint" style="padding:8px;">Sin categorías.</div>';
+}
+
+function fillSelectWithCategorias(id) {
+  const sel = document.getElementById(id);
+  const cats = getCategorias();
+  sel.innerHTML = '<option value="">Seleccionar...</option>' + cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+}
+
+function openAddCategoria() { openModal('modal-cat'); }
+function saveCategoria() {
+  const nombre = v('mcat-nombre').trim();
+  if (!nombre) return;
+  const cats = getCategorias(); cats.push(nombre); set('cats', cats);
+  renderCategorias(); closeModal('modal-cat'); sv('mcat-nombre','');
+  showAlert('alert-top','al-ok','✓','Categoría agregada.');
+}
+function deleteCategoria(i) {
+  if (!confirm('¿Eliminar esta categoría?')) return;
+  const cats = getCategorias(); cats.splice(i,1); set('cats',cats); renderCategorias();
+}
+
+// ─── Proveedores ──────────────────────────────────────────
+function renderProveedores() {
+  const provs = getProveedores();
+  // Datalist for form input
+  document.getElementById('proveedores-list').innerHTML = provs.map(p=>`<option value="${esc(p)}">`).join('');
+  // Config list
+  const list = document.getElementById('proveedores-list-cfg');
+  list.innerHTML = provs.map((p,i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;">🏢 ${esc(p)}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteProveedor(${i})">✕</button>
+    </div>`).join('') || '<div class="hint" style="padding:8px;">Sin proveedores.</div>';
+}
+
+function openAddProveedor() { openModal('modal-prov'); }
+function saveProveedor() {
+  const nombre = v('mprov-nombre').trim();
+  if (!nombre) return;
+  const provs = getProveedores(); provs.push(nombre); set('provs', provs);
+  renderProveedores(); closeModal('modal-prov'); sv('mprov-nombre','');
+  showAlert('alert-top','al-ok','✓','Proveedor agregado.');
+}
+function deleteProveedor(i) {
+  if (!confirm('¿Eliminar este proveedor?')) return;
+  const provs = getProveedores(); provs.splice(i,1); set('provs',provs); renderProveedores();
+}
+
+// ─── Guardar gasto ────────────────────────────────────────
+async function saveGasto(sendToFudo) {
+  const monto = parseFloat(v('f-monto'));
+  if (!monto || monto <= 0) return showAlert('alert-top','al-err','✗','El importe es obligatorio.');
+  if (!v('f-proveedor')) return showAlert('alert-top','al-err','✗','El proveedor es obligatorio.');
+  if (!v('f-categoria')) return showAlert('alert-top','al-err','✗','La categoría es obligatoria.');
+
+  const gasto = {
+    id: Date.now(),
+    fecha: v('f-fecha') || today(),
+    proveedor: v('f-proveedor'),
+    categoria: v('f-categoria'),
+    monto,
+    medio_pago: v('f-medio'),
+    comentario: v('f-comentario'),
+    estado: currentEstado,
+    vencimiento: v('f-vencimiento'),
+    tipo_comprobante: v('f-tipo-comp'),
+    n_comprobante: v('f-ncomp'),
+    fudo_status: 'pendiente',
+    created_at: new Date().toISOString(),
+  };
+
+  // Save locally
+  const gastos = getGastos();
+  gastos.unshift(gasto);
+  set('gastos', gastos);
+
+  // Auto-create Google Calendar event if vencimiento set and connected
+  if (gCalAccessToken && (gasto.vencimiento || gasto.fecha)) {
+    const calLink = await createCalendarEvent(gasto);
+    if (calLink) {
+      gasto.cal_event = calLink;
+      set('gastos', gastos);
+    }
+  }
+
+  if (sendToFudo) {
+    const cfg = getConfig();
+    if (!cfg.url || !cfg.token) {
+      gasto.fudo_status = 'sin_api';
+      set('gastos', gastos);
+      showSuccessScreen('💾 Guardado localmente', 'La API de FUDO aún no está configurada. El gasto quedó guardado y lo podés enviar cuando esté lista.', gasto.cal_event);
+      return;
+    }
+    try {
+      const payload = buildFudoPayload(gasto);
+      const res = await fetch(`${cfg.url.replace(/\/$/,'')}/api/v1/expenses`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':`Bearer ${cfg.token}`,'X-API-Secret':cfg.token},
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const d = await res.json().catch(()=>({}));
+        gasto.fudo_status = 'enviado';
+        gasto.fudo_id = d.id || d.expense_id || '';
+        set('gastos', gastos);
+        showSuccessScreen('🚀 ¡Cargado en FUDO!', `Gasto de ${peso(monto)} registrado en tu cuenta FUDO.`, gasto.cal_event);
+      } else {
+        gasto.fudo_status = 'error';
+        set('gastos', gastos);
+        showSuccessScreen('💾 Guardado localmente', `No se pudo enviar a FUDO (HTTP ${res.status}). Guardado localmente para reintento.`, gasto.cal_event);
+      }
+    } catch(e) {
+      gasto.fudo_status = 'error';
+      set('gastos', gastos);
+      showSuccessScreen('💾 Guardado localmente', 'Error de red. Guardado localmente.', gasto.cal_event);
+    }
+  } else {
+    showSuccessScreen('💾 Guardado localmente', `Gasto de ${peso(monto)} guardado. Podés cargarlo a FUDO cuando tengas la API activa.`, gasto.cal_event);
+  }
+
+  updateTodayStrip();
+  renderHistorial();
+}
+
+function buildFudoPayload(g) {
+  return {
+    date: g.fecha,
+    provider: g.proveedor,
+    category: g.categoria,
+    amount: g.monto,
+    payment_method: g.medio_pago,
+    comment: g.comentario,
+    status: g.estado === 'Pagado' ? 'paid' : 'pending',
+    due_date: g.vencimiento || null,
+    receipt_type: g.tipo_comprobante || null,
+    receipt_number: g.n_comprobante || null,
+    notes: 'Cargado con Gastos Rápidos · FacturaScan'
+  };
+}
+
+// ─── Historial ────────────────────────────────────────────
+function renderHistorial() {
+  const gastos = getGastos();
+  const filtroMes = v('hist-filtro-mes');
+
+  // Fill month filter
+  const meses = [...new Set(gastos.map(g => g.fecha.substring(0,7)))].sort().reverse();
+  const selMes = document.getElementById('hist-filtro-mes');
+  const curMes = selMes.value;
+  selMes.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m=>`<option value="${m}">${m}</option>`).join('');
+  if (curMes) selMes.value = curMes;
+
+  const filtered = filtroMes ? gastos.filter(g => g.fecha.startsWith(filtroMes)) : gastos;
+
+  // Summary
+  const totalPagado = filtered.filter(g=>g.estado==='Pagado').reduce((s,g)=>s+g.monto,0);
+  const totalPend   = filtered.filter(g=>g.estado==='Pendiente').reduce((s,g)=>s+g.monto,0);
+  document.getElementById('hist-summary').innerHTML = `
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;flex:1;min-width:120px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;">Total pagado</div>
+      <div style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent3);">${peso(totalPagado)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;flex:1;min-width:120px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;">Pendiente</div>
+      <div style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent4);">${peso(totalPend)}</div>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;flex:1;min-width:120px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;">N° gastos</div>
+      <div style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;">${filtered.length}</div>
+    </div>`;
+
+  const tbody = document.getElementById('hist-body');
+  tbody.innerHTML = '';
+  const empty = document.getElementById('hist-empty');
+
+  if (!filtered.length) { empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  filtered.forEach(g => {
+    const statusIcon = g.fudo_status === 'enviado' ? '🟢' : g.fudo_status === 'error' ? '🔴' : g.fudo_status === 'sin_api' ? '🟡' : '⚪';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-family:'DM Mono',monospace;white-space:nowrap;">${g.fecha}</td>
+      <td style="font-weight:600;">${esc(g.proveedor)}</td>
+      <td style="font-size:11px;color:var(--text-dim);">${esc(g.categoria)}</td>
+      <td style="font-size:12px;color:var(--text-dim);">${esc(g.comentario||'—')}</td>
+      <td style="font-size:11px;">${esc(g.medio_pago)}</td>
+      <td><span class="estado-badge ${g.estado==='Pagado'?'eb-pagado':'eb-pendiente'}">${g.estado}</span> ${statusIcon}</td>
+      <td style="font-weight:700;font-family:'DM Mono',monospace;text-align:right;">${peso(g.monto)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteGasto(${g.id})">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteGasto(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  const gastos = getGastos().filter(g => g.id !== id);
+  set('gastos', gastos);
+  renderHistorial();
+  updateTodayStrip();
+}
+
+function exportarHistorial() {
+  const gastos = getGastos();
+  const filtroMes = v('hist-filtro-mes');
+  const filtered = filtroMes ? gastos.filter(g => g.fecha.startsWith(filtroMes)) : gastos;
+  const rows = [['Fecha','Proveedor','Categoría','Comentario','Medio de pago','Estado','Importe','FUDO Status']];
+  filtered.forEach(g => rows.push([g.fecha,g.proveedor,g.categoria,g.comentario||'',g.medio_pago,g.estado,g.monto,g.fudo_status]));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `gastos_fudo_${filtroMes||'todos'}.csv`; a.click();
+}
+
+// ─── Today strip ──────────────────────────────────────────
+function updateTodayStrip() {
+  const t = today();
+  const gastos = getGastos().filter(g => g.fecha === t);
+  const total = gastos.reduce((s,g) => s+g.monto, 0);
+  document.getElementById('today-total').textContent = peso(total);
+  document.getElementById('today-count').textContent = gastos.length;
+}
+
+// ─── Config ───────────────────────────────────────────────
+function loadConfig() {
+  const cfg = getConfig();
+  if (cfg.url) sv('cfg-url', cfg.url);
+  if (cfg.token) sv('cfg-token', cfg.token);
+}
+function saveConfig() {
+  set('cfg', {url: v('cfg-url'), token: v('cfg-token')});
+  showAlert('alert-cfg','al-ok','✓','Configuración guardada.');
+}
+
+// ─── UI helpers ───────────────────────────────────────────
+function showTab(tabId, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  showSection(tabId);
+}
+
+function showSection(id) {
+  ['tab-nuevo','tab-historial','tab-config','sec-success'].forEach(s => {
+    const e = document.getElementById(s); if(e) e.className='section'+(s===id?' active':'');
+  });
+}
+
+function showSuccessScreen(title, desc, calLink) {
+  document.getElementById('succ-title').textContent = title;
+  document.getElementById('succ-desc').textContent = desc;
+  const extra = document.getElementById('succ-extra');
+  if (extra) extra.remove();
+  if (calLink) {
+    const div = document.createElement('div');
+    div.id = 'succ-extra';
+    div.innerHTML = `<a href="${calLink}" target="_blank" class="btn btn-o btn-full" style="margin-top:12px;text-decoration:none;">
+      📅 Ver evento en Google Calendar →
+    </a>`;
+    document.querySelector('.succ-wrap').insertBefore(div, document.querySelector('.succ-wrap > div:last-child'));
+  }
+  showSection('sec-success');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+}
+
+function resetForm() {
+  ['f-monto','f-proveedor','f-comentario','f-vencimiento','f-ncomp'].forEach(id => sv(id,''));
+  sv('f-fecha', today());
+  sv('f-categoria','');
+  sv('f-medio','Transferencia');
+  sv('f-tipo-comp','');
+  setEstado('Pagado');
+}
+
+function toggleEl(id, togId, openTxt, closeTxt) {
+  const e = document.getElementById(id), t = document.getElementById(togId);
+  const isOpen = e.classList.contains('open');
+  e.className = 'collapsible '+(isOpen?'closed':'open');
+  if(t) t.textContent = isOpen ? closeTxt : openTxt;
+}
+
+function openModal(id) { document.getElementById(id).style.display='flex'; }
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+
+function showAlert(id, cls, icon, msg) {
+  const e = document.getElementById(id);
+  if(e) e.innerHTML = `<div class="alert ${cls}"><span class="ai">${icon}</span><div>${msg}</div></div>`;
+  setTimeout(() => { if(e) e.innerHTML=''; }, 5000);
+}
+
+function v(id)    { return document.getElementById(id)?.value?.trim()||''; }
+function sv(id,val){ const e=document.getElementById(id); if(e) e.value=val; }
+function esc(s)   { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function peso(n)  { return '$'+Math.round(n||0).toLocaleString('es-CL'); }
+
+// ─── Google Calendar ──────────────────────────────────────
+const GCAL_SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+let gCalTokenClient = null;
+let gCalAccessToken = null;
+
+function getGCalClientId() { return (getConfig().gcal_client_id || '').trim(); }
+
+function connectGoogleCalendar() {
+  const clientId = v('gcal-client-id');
+  if (!clientId) return showAlert('alert-top','al-err','✗','Pegá tu Client ID de Google primero.');
+
+  // Save client ID
+  const cfg = getConfig(); cfg.gcal_client_id = clientId; set('cfg', cfg);
+
+  // Load Google Identity Services
+  if (!document.getElementById('gis-script')) {
+    const s = document.createElement('script');
+    s.id = 'gis-script';
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => initGCalTokenClient(clientId);
+    document.head.appendChild(s);
+  } else {
+    initGCalTokenClient(clientId);
+  }
+}
+
+function initGCalTokenClient(clientId) {
+  try {
+    gCalTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: GCAL_SCOPES,
+      callback: (resp) => {
+        if (resp.error) { showAlert('alert-top','al-err','✗','Error de autenticación: '+resp.error); return; }
+        gCalAccessToken = resp.access_token;
+        // Get user email
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: 'Bearer ' + gCalAccessToken }
+        }).then(r=>r.json()).then(u => {
+          const cfg = getConfig(); cfg.gcal_email = u.email; set('cfg', cfg);
+          document.getElementById('gcal-email').textContent = u.email || 'Conectado';
+        });
+        set('cfg', {...getConfig(), gcal_connected: true});
+        showGCalConnected();
+        showAlert('alert-top','al-ok','📅','¡Google Calendar conectado! Los vencimientos se agregarán automáticamente.');
+        loadUpcomingPayments();
+      }
+    });
+    gCalTokenClient.requestAccessToken();
+  } catch(e) {
+    showAlert('alert-top','al-err','✗','Error al inicializar Google: '+e.message+'. Verificá que el Client ID sea correcto y que hayas agregado claude.ai como origen autorizado.');
+  }
+}
+
+function showGCalConnected() {
+  document.getElementById('gcal-disconnected').style.display = 'none';
+  document.getElementById('gcal-connected').style.display = 'block';
+  document.getElementById('gcal-status-badge').textContent = '✓ conectado';
+  document.getElementById('gcal-status-badge').style.color = 'var(--accent3)';
+  const cfg = getConfig();
+  if (cfg.gcal_email) document.getElementById('gcal-email').textContent = cfg.gcal_email;
+}
+
+function disconnectGoogleCalendar() {
+  if (!confirm('¿Desconectar Google Calendar?')) return;
+  gCalAccessToken = null;
+  const cfg = getConfig(); delete cfg.gcal_connected; delete cfg.gcal_email; set('cfg', cfg);
+  document.getElementById('gcal-disconnected').style.display = 'block';
+  document.getElementById('gcal-connected').style.display = 'none';
+  document.getElementById('gcal-status-badge').textContent = 'no conectado';
+  document.getElementById('gcal-status-badge').style.color = 'var(--text-muted)';
+}
+
+async function createCalendarEvent(gasto) {
+  if (!gCalAccessToken) return false;
+
+  const fecha = gasto.vencimiento || gasto.fecha;
+  if (!fecha) return false;
+
+  const event = {
+    summary: `💸 Pagar: ${gasto.proveedor}`,
+    description: `Gasto registrado en FUDO\nCategoría: ${gasto.categoria}\nMonto: ${peso(gasto.monto)}\nComentario: ${gasto.comentario||''}\n\nGenerado automáticamente por FacturaScan · Gastos Rápidos`,
+    start: { date: fecha },
+    end:   { date: fecha },
+    colorId: '11', // Tomato red
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup',  minutes: 480 }, // 8am notification
+        { method: 'email',  minutes: 480 },
+      ]
+    }
+  };
+
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + gCalAccessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(event)
+    });
+    if (res.ok) {
+      const d = await res.json();
+      return d.htmlLink; // URL del evento creado
+    }
+    return false;
+  } catch(e) { return false; }
+}
+
+async function loadUpcomingPayments() {
+  if (!gCalAccessToken) return;
+  const wrap = document.getElementById('gcal-upcoming');
+  wrap.innerHTML = '<div class="hint" style="padding:8px;">Cargando próximos vencimientos...</div>';
+
+  try {
+    const now = new Date().toISOString();
+    const future = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&timeMax=${future}&q=Pagar:&singleEvents=true&orderBy=startTime&maxResults=10`,
+      { headers: { Authorization: 'Bearer ' + gCalAccessToken } }
+    );
+    const data = await res.json();
+    const events = data.items || [];
+
+    if (!events.length) { wrap.innerHTML = '<div class="hint" style="padding:8px;">Sin vencimientos en los próximos 30 días.</div>'; return; }
+
+    wrap.innerHTML = events.map(e => {
+      const fecha = e.start.date || e.start.dateTime?.split('T')[0];
+      const diasRestantes = Math.ceil((new Date(fecha) - new Date()) / (1000*60*60*24));
+      const urgente = diasRestantes <= 3;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:13px;font-weight:600;">${esc(e.summary)}</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;">${fecha}</div>
+        </div>
+        <div style="text-align:right;">
+          <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;${urgente?'background:#fef2f2;color:#dc2626;':'background:#f0fdf4;color:#15803d;'}">
+            ${diasRestantes === 0 ? '¡HOY!' : diasRestantes === 1 ? 'mañana' : `en ${diasRestantes}d`}
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    wrap.innerHTML = '<div class="hint" style="padding:8px;color:var(--accent2);">Error al cargar eventos.</div>';
+  }
+}
+
+// ─── Check calendar on init ────────────────────────────────
+function checkGCalState() {
+  const cfg = getConfig();
+  if (cfg.gcal_connected && cfg.gcal_client_id) {
+    showGCalConnected();
+    // Auto-load GIS to re-authenticate silently
+    if (!document.getElementById('gis-script')) {
+      const s = document.createElement('script');
+      s.id = 'gis-script';
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = () => {
+        try {
+          gCalTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: cfg.gcal_client_id,
+            scope: GCAL_SCOPES,
+            prompt: '',
+            callback: (resp) => {
+              if (!resp.error) {
+                gCalAccessToken = resp.access_token;
+                loadUpcomingPayments();
+              }
+            }
+          });
+          gCalTokenClient.requestAccessToken();
+        } catch(e) {}
+      };
+      document.head.appendChild(s);
+    }
+  }
+}
+
+// ─── Start ────────────────────────────────────────────────
+init();
+checkGCalState();
+</script>
+</body>
+</html>

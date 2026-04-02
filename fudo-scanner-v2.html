@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FacturaScan v2 · FUDO</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --surface3: #e8e7df;
+  --border: #d8d6cc;
+  --border2: #c8c6ba;
+  --accent: #1a1a2e;
+  --accent2: #e85d3a;
+  --accent3: #2d9e6b;
+  --accent4: #d4a017;
+  --text: #1a1a1a;
+  --text-dim: #5a5a5a;
+  --text-muted: #9a9a9a;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.app{max-width:720px;margin:0 auto;padding:24px 16px 100px;}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;}
+.logo{display:flex;align-items:center;gap:14px;}
+.logo-mark{width:46px;height:46px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:22px;box-shadow:3px 3px 0 var(--accent2);}
+.logo-text h1{font-size:18px;font-weight:700;letter-spacing:-0.5px;}
+.logo-text span{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+.vbadge{background:var(--accent);color:white;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;}
+
+.prog{display:flex;align-items:center;margin-bottom:28px;}
+.ps{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;}
+.pd{width:34px;height:34px;border-radius:50%;border:2px solid var(--border2);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--text-muted);font-family:'DM Mono',monospace;transition:all 0.3s;}
+.pl-txt{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;}
+.pline{flex:1;height:2px;background:var(--border);margin-bottom:20px;transition:background 0.3s;}
+.ps.active .pd{border-color:var(--accent);background:var(--accent);color:white;box-shadow:3px 3px 0 var(--accent2);}
+.ps.active .pl-txt{color:var(--accent);}
+.ps.done .pd{background:var(--accent3);border-color:var(--accent3);color:white;}
+.ps.done .pl-txt{color:var(--accent3);}
+.pline.done{background:var(--accent3);}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
+.ctitle{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px;font-family:'DM Mono',monospace;margin-bottom:14px;}
+.cheader{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.frow.three{grid-template-columns:1fr 1fr 1fr;}
+.frow.one{grid-template-columns:1fr;}
+@media(max-width:500px){.frow,.frow.three{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:5px;}
+.ai-tag{background:#e8f4ff;color:#2563eb;border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;}
+.calc-tag{background:#fef3e2;color:#d97706;border-radius:3px;padding:1px 5px;font-size:9px;font-weight:700;}
+
+input[type=text],input[type=password],input[type=url],input[type=number],select,textarea{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;font-size:14px;color:var(--text);font-family:'DM Mono',monospace;outline:none;transition:border-color .2s,background .2s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:white;}
+.hint{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:36px 20px;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:var(--surface2);}
+.upload-zone:hover,.upload-zone.over{border-color:var(--accent);background:#f0effe;}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-emoji{font-size:42px;display:block;margin-bottom:10px;}
+.upload-title{font-size:15px;font-weight:600;margin-bottom:5px;}
+.upload-sub{font-size:13px;color:var(--text-muted);}
+
+.btn-cam{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:3px 3px 0 var(--accent2);transition:all .15s;position:relative;margin-bottom:12px;}
+.btn-cam:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--accent2);}
+.btn-cam input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 22px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-p{background:var(--accent);color:white;box-shadow:3px 3px 0 var(--accent2);}
+.btn-p:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--accent2);}
+.btn-g{background:var(--accent3);color:white;box-shadow:3px 3px 0 #1a7a4a;}
+.btn-g:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:4px 4px 0 #1a7a4a;}
+.btn-o{background:white;color:var(--text);border:1.5px solid var(--border2);}
+.btn-o:hover{border-color:var(--accent);color:var(--accent);}
+.btn-full{width:100%;}
+
+.alert{border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;animation:fdin .25s ease;}
+@keyframes fdin{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+.a-i{font-size:15px;flex-shrink:0;margin-top:1px;}
+.al-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;}
+.al-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;}
+.al-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;}
+.al-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;}
+
+.prev-wrap{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);margin-bottom:14px;position:relative;}
+.prev-wrap img{width:100%;max-height:280px;object-fit:contain;background:var(--surface2);display:block;}
+.prev-chip{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text-dim);}
+
+.scan-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:52px 24px;text-align:center;box-shadow:var(--shadow);}
+.spinner{width:52px;height:52px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 22px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.scan-pulse{width:160px;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);margin:12px auto;animation:pulse 1.3s ease-in-out infinite;border-radius:2px;}
+@keyframes pulse{0%,100%{opacity:0;width:70px;}50%{opacity:1;width:160px;}}
+
+.pattern-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.pchip{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border2);font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text-dim);transition:all .2s;}
+.pchip:hover{border-color:var(--accent);color:var(--accent);}
+.pchip.active{background:var(--accent);color:white;border-color:var(--accent);}
+
+.itbl{width:100%;border-collapse:collapse;font-size:13px;}
+.itbl th{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;text-align:left;padding:8px 9px;border-bottom:2px solid var(--border);font-family:'DM Mono',monospace;white-space:nowrap;}
+.itbl td{padding:8px 9px;border-bottom:1px solid var(--surface2);vertical-align:middle;}
+.itbl tr:last-child td{border-bottom:none;}
+.itbl td input,.itbl td select{background:transparent;border:none;padding:0;font-size:13px;color:var(--text);font-family:'DM Mono',monospace;outline:none;width:100%;}
+.itbl td input:focus{border-bottom:1.5px solid var(--accent);}
+.itbl tr:hover td{background:var(--surface2);}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:2px 5px;border-radius:4px;transition:all .15s;}
+.del-btn:hover{background:#fef2f0;color:var(--accent2);}
+
+.tbadge{display:inline-block;font-size:9px;font-weight:700;border-radius:3px;padding:2px 5px;font-family:'DM Mono',monospace;}
+.tb-iva{background:#e8f4ff;color:#2563eb;}
+.tb-ila{background:#fef3e2;color:#d97706;}
+.tb-har{background:#f0fdf4;color:#15803d;}
+.tb-ex{background:var(--surface2);color:var(--text-muted);}
+
+.ctbl{width:100%;border-collapse:collapse;font-size:13px;}
+.ctbl th{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;text-align:right;padding:8px 9px;border-bottom:2px solid var(--border);font-family:'DM Mono',monospace;}
+.ctbl th:first-child{text-align:left;}
+.ctbl td{padding:9px 9px;border-bottom:1px solid var(--surface2);font-family:'DM Mono',monospace;text-align:right;font-size:13px;}
+.ctbl td:first-child{text-align:left;font-family:'DM Sans',sans-serif;}
+.ctbl .hrow td{background:#f0fdf4;font-weight:700;color:var(--accent3);}
+
+.totstrip{background:var(--accent);color:white;border-radius:var(--radius-sm);padding:16px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+.totstrip .ti{text-align:center;}
+.totstrip .tl{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;opacity:.6;font-family:'DM Mono',monospace;}
+.totstrip .tv{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;margin-top:3px;}
+.totstrip .tv.hi{color:#7fffb8;}
+@media(max-width:500px){.totstrip{grid-template-columns:1fr 1fr;}}
+
+.freight-card{background:linear-gradient(135deg,#fff8e6,#fffdf5);border:1.5px solid #fde68a;border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;}
+
+.section{display:none;}
+.section.active{display:block;animation:fdin .25s ease;}
+hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.collapsible{overflow:hidden;transition:max-height .35s ease;}
+.collapsible.open{max-height:800px;}
+.collapsible.closed{max-height:0;}
+.toggle-link{font-size:12px;color:var(--text-muted);cursor:pointer;font-family:'DM Mono',monospace;text-decoration:underline;text-underline-offset:3px;background:none;border:none;padding:0;}
+.toggle-link:hover{color:var(--accent);}
+.arow{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+.arow .btn{flex:1;min-width:120px;}
+
+.succ-wrap{text-align:center;padding:28px 16px;}
+.succ-check{width:68px;height:68px;border-radius:50%;background:var(--accent3);color:white;font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:4px 4px 0 #1a7a4a;animation:popIn .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(0);}to{transform:scale(1);}}
+.succ-wrap h2{font-size:21px;font-weight:700;margin-bottom:7px;}
+.succ-wrap p{color:var(--text-dim);font-size:14px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;text-align:left;}
+@media(max-width:480px){.info-grid{grid-template-columns:1fr;}}
+.ic{background:var(--surface2);border-radius:var(--radius-sm);padding:11px 13px;}
+.ic .lbl{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.8px;}
+.ic .val{font-size:14px;font-weight:700;font-family:'DM Mono',monospace;margin-top:3px;}
+pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);padding:14px;font-size:11px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-family:'DM Mono',monospace;line-height:1.6;margin-top:12px;}
+.cbar{height:2px;border-radius:1px;background:var(--border);margin-top:3px;overflow:hidden;}
+.cfill{height:100%;border-radius:1px;transition:width .5s;background:var(--accent3);}
+.cfill.med{background:var(--accent4);}
+.cfill.low{background:var(--accent2);}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">🧾</div>
+    <div class="logo-text">
+      <h1>FacturaScan</h1>
+      <span>para FUDO · Chile</span>
+    </div>
+  </div>
+  <div class="vbadge">v2.0</div>
+</header>
+
+<div class="prog">
+  <div class="ps active" id="ps1"><div class="pd">1</div><div class="pl-txt">Factura</div></div>
+  <div class="pline" id="pl1"></div>
+  <div class="ps" id="ps2"><div class="pd">2</div><div class="pl-txt">Flete</div></div>
+  <div class="pline" id="pl2"></div>
+  <div class="ps" id="ps3"><div class="pd">3</div><div class="pl-txt">Costos</div></div>
+  <div class="pline" id="pl3"></div>
+  <div class="ps" id="ps4"><div class="pd">4</div><div class="pl-txt">FUDO</div></div>
+</div>
+
+<!-- STEP 1 -->
+<div class="section active" id="step1">
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">⚙ Conexión FUDO</div>
+      <button class="toggle-link" id="cfg-tog" onclick="toggleEl('cfg-body','cfg-tog','▾ configurar','▸ configurar')">▾ configurar</button>
+    </div>
+    <div class="collapsible open" id="cfg-body">
+      <div id="alert-cfg"></div>
+      <div class="alert al-info"><span class="a-i">ℹ</span><div>Solicitá a soporte de FUDO la activación de la <strong>"API de propósito general"</strong>. Luego generá tu token en <em>Administración → Usuarios → Establecer API Secret</em>.</div></div>
+      <div class="frow">
+        <div class="field"><label>URL de tu cuenta FUDO</label><input type="url" id="cfg-url" placeholder="https://mirestaurante.fudo.com.ar"></div>
+        <div class="field"><label>API Token</label><input type="password" id="cfg-token" placeholder="••••••••••••••••"></div>
+      </div>
+      <div class="frow one">
+        <div class="field"><label>Categoría FUDO por defecto</label><input type="text" id="cfg-cat" value="Compra de Mercadería"></div>
+      </div>
+      <button class="btn btn-o" onclick="saveConfig()" style="margin-top:4px;">💾 Guardar configuración</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">🏭 Patrón de proveedor</div>
+      <span class="hint">mejora la precisión de lectura</span>
+    </div>
+    <div class="pattern-selector">
+      <div class="pchip active" data-pat="generic" onclick="selPat(this)">📄 Genérico</div>
+      <div class="pchip" data-pat="coca_cola" onclick="selPat(this)">🥤 Coca Cola Embonor</div>
+      <div class="pchip" data-pat="harina" onclick="selPat(this)">🌾 Proveedor Harina</div>
+      <div class="pchip" data-pat="alcohol" onclick="selPat(this)">🍷 Bebidas Alcohólicas</div>
+    </div>
+    <div class="hint" id="pat-desc" style="color:var(--text-dim);">Sin patrón específico — la IA detecta el formato automáticamente.</div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">📸 Subir factura</div>
+    <label class="btn-cam">📷 Tomar foto con la cámara<input type="file" accept="image/*" capture="environment" onchange="handleFile(this.files[0])"></label>
+    <div class="upload-zone" id="drop-zone"
+      ondragover="event.preventDefault();this.classList.add('over')"
+      ondragleave="this.classList.remove('over')"
+      ondrop="handleDrop(event)">
+      <input type="file" accept="image/*" onchange="handleFile(this.files[0])">
+      <span class="upload-emoji">🗂</span>
+      <div class="upload-title">Arrastrá o hacé clic aquí</div>
+      <div class="upload-sub">JPG, PNG, WEBP · máx 10 MB</div>
+    </div>
+  </div>
+
+  <div id="alert1"></div>
+
+  <div id="prev-card" style="display:none;">
+    <div class="card">
+      <div class="ctitle">👁 Vista previa</div>
+      <div class="prev-wrap"><img id="prev-img" src="" alt=""><span class="prev-chip" id="prev-name"></span></div>
+      <button class="btn btn-p btn-full" onclick="startScan()">🔍 Escanear con IA</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCANNING -->
+<div class="section" id="step-scan">
+  <div class="scan-card">
+    <div class="spinner"></div>
+    <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">Analizando factura...</h2>
+    <p style="color:var(--text-dim);font-size:14px;margin-bottom:10px;">La IA está leyendo y calculando impuestos</p>
+    <div class="scan-pulse"></div>
+    <p class="hint" id="scan-msg">Detectando campos...</p>
+  </div>
+</div>
+
+<!-- STEP 2: Review + Freight -->
+<div class="section" id="step2">
+  <div id="alert2"></div>
+
+  <div class="card">
+    <div class="ctitle">🧾 Datos del proveedor <span class="ai-tag">IA</span></div>
+    <div class="frow">
+      <div class="field"><label>Proveedor <span class="ai-tag">IA</span></label><input type="text" id="f-prov"><div class="cbar"><div class="cfill" id="c-prov" style="width:0%"></div></div></div>
+      <div class="field"><label>RUT <span class="ai-tag">IA</span></label><input type="text" id="f-rut"><div class="cbar"><div class="cfill" id="c-rut" style="width:0%"></div></div></div>
+    </div>
+    <div class="frow three">
+      <div class="field"><label>N° Factura <span class="ai-tag">IA</span></label><input type="text" id="f-num"><div class="cbar"><div class="cfill" id="c-num" style="width:0%"></div></div></div>
+      <div class="field"><label>Fecha <span class="ai-tag">IA</span></label><input type="text" id="f-fecha"><div class="cbar"><div class="cfill" id="c-fecha" style="width:0%"></div></div></div>
+      <div class="field"><label>Categoría FUDO</label><input type="text" id="f-cat"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">📦 Ítems <span class="ai-tag">IA</span></div>
+      <button class="btn btn-o" onclick="addItemRow()" style="padding:5px 12px;font-size:12px;">+ Agregar ítem</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="itbl">
+        <thead><tr>
+          <th>Cód.</th><th>Descripción</th><th>Cant.</th><th>Neto Unit.</th><th>Flete/ítem</th><th>Impuesto</th><th>%</th><th></th>
+        </tr></thead>
+        <tbody id="items-body"></tbody>
+      </table>
+    </div>
+    <div class="hint" style="margin-top:9px;" id="items-hint">💡 Cada ítem tiene su impuesto asignado automáticamente. Podés corregirlo si es necesario.</div>
+  </div>
+
+  <div class="freight-card" id="freight-card">
+    <div class="cheader" style="margin-bottom:12px;">
+      <div class="ctitle" style="color:#92400e;">🚛 Flete externo</div>
+      <span class="hint" id="freight-label">empresa transportista separada</span>
+    </div>
+    <div id="freight-inline-notice" style="display:none;">
+      <div class="alert al-ok"><span class="a-i">✓</span><div><strong>Flete incluido en la factura por ítem.</strong> Coca Cola Embonor ya distribuyó el flete en cada línea — no hay que ingresar nada aquí. El costo real ya lo contempla.</div></div>
+    </div>
+    <div id="freight-external-form">
+      <div class="alert al-warn" style="margin-bottom:12px;"><span class="a-i">💡</span><div>El flete se distribuirá <strong>proporcionalmente por valor</strong> entre todos los ítems.</div></div>
+      <div class="frow">
+        <div class="field"><label>Empresa transportista</label><input type="text" id="fr-empresa" placeholder="Ej: Starken, Chilexpress..."></div>
+        <div class="field"><label>N° Boleta / Factura</label><input type="text" id="fr-num" placeholder="001-001-00000"></div>
+      </div>
+      <div class="frow three">
+        <div class="field"><label>Monto neto flete ($)</label><input type="number" id="fr-neto" placeholder="0" oninput="calcFreight()"><div class="hint">Sin IVA</div></div>
+        <div class="field"><label>IVA flete (19%)</label><input type="number" id="fr-iva" placeholder="0" readonly style="background:var(--surface3);color:var(--text-muted);"></div>
+        <div class="field"><label>Total flete</label><input type="number" id="fr-total" placeholder="0" readonly style="background:var(--surface3);font-weight:700;color:var(--accent);"></div>
+      </div>
+      <div class="hint" id="fr-preview" style="color:#92400e;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <div class="arow">
+    <button class="btn btn-o" onclick="goTo('step1',1)">← Volver</button>
+    <button class="btn btn-p" onclick="calcFinalCosts()">📊 Calcular costos reales →</button>
+  </div>
+</div>
+
+<!-- STEP 3: Costs -->
+<div class="section" id="step3">
+  <div id="alert3"></div>
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">💰 Costo real por ítem <span class="calc-tag">CALCULADO</span></div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="ctbl">
+        <thead><tr>
+          <th>Producto</th><th>Cant.</th><th>Neto</th><th>Impuestos</th><th>Flete</th><th>Costo real total</th>
+        </tr></thead>
+        <tbody id="cost-body"></tbody>
+      </table>
+    </div>
+    <div class="totstrip">
+      <div class="ti"><div class="tl">Neto fact.</div><div class="tv" id="t-neto">$0</div></div>
+      <div class="ti"><div class="tl">Impuestos</div><div class="tv" id="t-imp">$0</div></div>
+      <div class="ti"><div class="tl">Flete total</div><div class="tv" id="t-flete">$0</div></div>
+      <div class="ti"><div class="tl">Costo real</div><div class="tv hi" id="t-real">$0</div></div>
+    </div>
+  </div>
+  <div class="arow">
+    <button class="btn btn-o" onclick="goTo('step2',2)">← Ajustar</button>
+    <button class="btn btn-g" onclick="sendToFudo()">🚀 Cargar en FUDO →</button>
+  </div>
+</div>
+
+<!-- SENDING -->
+<div class="section" id="step-send">
+  <div class="scan-card">
+    <div class="spinner" style="border-top-color:var(--accent3);"></div>
+    <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">Cargando en FUDO...</h2>
+    <p style="color:var(--text-dim);font-size:14px;">Enviando gasto a tu cuenta</p>
+  </div>
+</div>
+
+<!-- STEP 4: Success -->
+<div class="section" id="step4">
+  <div class="card">
+    <div class="succ-wrap">
+      <div class="succ-check">✓</div>
+      <h2>¡Listo!</h2>
+      <p id="succ-desc">Gasto registrado correctamente.</p>
+      <div class="info-grid" id="succ-grid"></div>
+      <div id="succ-extra"></div>
+      <button class="btn btn-p btn-full" onclick="resetAll()" style="margin-top:12px;">📷 Escanear otra factura</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let imgFile=null,imgB64=null,activePat='generic',extracted={},finalCosts=[];
+
+const PATTERNS={
+  generic:  {desc:'Sin patrón — la IA detecta el formato automáticamente.',defTax:'iva'},
+  coca_cola:{desc:'🥤 Coca Cola Embonor: precio neto + ILA bebidas analcohólicas (18%) + IVA (19%). La IA suma las columnas automáticamente.',defTax:'ila_anc'},
+  harina:   {desc:'🌾 Harina de trigo: impuesto adicional 12% + IVA 19%.',defTax:'harina'},
+  alcohol:  {desc:'🍷 Bebidas alcohólicas con ILA variable + IVA 19%.',defTax:'ila_alc'},
+};
+
+const TAXES={
+  iva:    {label:'Solo IVA 19%',        iva:.19, extra:0,     el:'IVA',    badge:'tb-iva'},
+  ila_anc:{label:'IVA + ILA Anc. 18%', iva:.19, extra:.18,   el:'ILA',    badge:'tb-ila'},
+  ila_alc:{label:'IVA + ILA Alc. 27.5%',iva:.19,extra:.275,  el:'ILA',    badge:'tb-ila'},
+  harina: {label:'IVA + Imp.Harina 12%',iva:.19, extra:.12,  el:'I.Hari.',badge:'tb-har'},
+  exento: {label:'Exento (sin imp.)',   iva:0,   extra:0,     el:'EXENTO', badge:'tb-ex'},
+};
+
+// Config
+function loadConfig(){
+  const c=JSON.parse(localStorage.getItem('fsc2')||'{}');
+  if(c.url)  el('cfg-url').value=c.url;
+  if(c.tok)  el('cfg-token').value=c.tok;
+  if(c.cat)  el('cfg-cat').value=c.cat;
+  if(c.url&&c.tok){
+    el('cfg-body').className='collapsible closed';
+    el('cfg-tog').textContent='▸ configurar';
+  }
+}
+function saveConfig(){
+  localStorage.setItem('fsc2',JSON.stringify({url:v('cfg-url'),tok:v('cfg-token'),cat:v('cfg-cat')}));
+  alert2('alert-cfg','al-ok','✓','Configuración guardada.');
+}
+
+// Pattern
+function selPat(e){
+  document.querySelectorAll('.pchip').forEach(c=>c.classList.remove('active'));
+  e.classList.add('active');
+  activePat=e.dataset.pat;
+  el('pat-desc').textContent=PATTERNS[activePat].desc;
+}
+
+// File
+function handleDrop(e){e.preventDefault();el('drop-zone').classList.remove('over');handleFile(e.dataTransfer.files[0]);}
+function handleFile(f){
+  if(!f||!f.type.startsWith('image/')) return alert2('alert1','al-err','✗','Seleccioná una imagen válida.');
+  if(f.size>10*1024*1024) return alert2('alert1','al-err','✗','Imagen demasiado grande (máx 10 MB).');
+  imgFile=f;
+  const r=new FileReader();
+  r.onload=e=>{
+    imgB64=e.target.result.split(',')[1];
+    el('prev-img').src=e.target.result;
+    el('prev-name').textContent=f.name;
+    el('prev-card').style.display='block';
+    el('alert1').innerHTML='';
+  };
+  r.readAsDataURL(f);
+}
+
+// Scan
+async function startScan(){
+  if(!imgB64) return;
+  goTo('step-scan',null);
+  const msgs=['Detectando proveedor...','Leyendo ítems...','Identificando impuestos...','Sumando columnas...','Verificando totales...'];
+  let mi=0;
+  const iv=setInterval(()=>{el('scan-msg').textContent=msgs[mi++%msgs.length];},900);
+
+  const hints={
+    generic:'Detectá el formato automáticamente.',
+    coca_cola:`IMPORTANTE: Esta es una factura de Coca Cola Embonor S.A. Chile (RUT 93.281.000-K).
+La tabla de ítems tiene estas columnas exactas: Código | Descripción | Cantidad | Precio Unitario | % Desc. | Neto Total | Flete Total | I.V.A. | Adicional.
+REGLAS DE CÁLCULO POR ÍTEM:
+- "precio_neto_unitario" = columna "Precio Unitario" (precio neto por unidad, antes de todo impuesto)
+- "neto_total_item" = columna "Neto Total" (precio neto × cantidad, ya con descuentos aplicados)
+- "flete_item" = columna "Flete Total" (flete proporcional ya asignado a ese ítem — NO es una factura separada)
+- "iva_item" = columna "I.V.A." (19% del neto)
+- "adicional_item" = columna "Adicional" = ILA (impuesto bebidas analcohólicas, puede ser 18% o 10% según el producto)
+- "costo_real_item" = Neto Total + Flete Total + I.V.A. + Adicional
+En el resumen final hay dos líneas de ILA: "I.A.B.A. 18%" para bebidas con más azúcar y "I.A.B.A. 10%" para otras. Detectá cuál aplica a cada producto según la columna Adicional.
+El flete ya está distribuido por ítem — NO hay que calcularlo ni pedirlo por separado.`,
+    harina:'Esta factura puede contener harina de trigo. La harina tiene impuesto específico del 12% sobre precio neto, más IVA 19%.',
+    alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) más IVA 19%.',
+  }[activePat];
+
+  const esCocaCola = activePat === 'coca_cola';
+
+  const prompt=`Analizá esta imagen de factura de compra chilena.
+${hints}
+
+Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto extra:
+{
+  "proveedor":"nombre del proveedor",
+  "rut":"RUT del proveedor ej 93.281.000-K",
+  "numero_factura":"número de comprobante",
+  "fecha":"DD/MM/AAAA",
+  "cliente_rut":"RUT del cliente comprador",
+  "items":[
+    {
+      "codigo":"código interno del producto si aparece",
+      "descripcion":"nombre del producto",
+      "cantidad":número,
+      "precio_neto_unitario":número,
+      "neto_total":número,
+      "flete_item":número (columna Flete Total por ítem, 0 si no existe),
+      "iva_item":número (columna IVA por ítem),
+      "adicional_item":número (columna Adicional/ILA por ítem, 0 si no existe),
+      "costo_real_item":número (neto_total + flete_item + iva_item + adicional_item),
+      "tipo_impuesto":"iva"|"ila_anc"|"ila_alc"|"harina"|"exento",
+      "pct_ila":número (porcentaje ILA aplicado: 18, 10, 0)
+    }
+  ],
+  "total_lista":número,
+  "total_descuentos":número,
+  "total_fletes":número,
+  "neto_factura":número,
+  "iaba_18":número,
+  "iaba_10":número,
+  "iva_factura":número,
+  "total_factura":número,
+  "flete_incluido_en_factura":${esCocaCola},
+  "confianza":{"proveedor":0-100,"rut":0-100,"numero_factura":0-100,"fecha":0-100,"items":0-100,"totales":0-100},
+  "observacion":"notas sobre el formato y columnas detectadas"
+}
+Campos no encontrados: usar "" o 0. SOLO el JSON.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:imgFile.type,data:imgB64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    clearInterval(iv);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    const raw=d.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim();
+    extracted=JSON.parse(raw);
+    fillStep2(extracted);
+    goTo('step2',2);
+  }catch(e){
+    clearInterval(iv);
+    goTo('step1',1);
+    alert2('alert1','al-err','✗','Error al analizar: '+e.message);
+  }
+}
+
+function fillStep2(d){
+  sv('f-prov',d.proveedor||'');sv('f-rut',d.rut||'');
+  sv('f-num',d.numero_factura||'');sv('f-fecha',d.fecha||'');
+  sv('f-cat',JSON.parse(localStorage.getItem('fsc2')||'{}').cat||'Compra de Mercadería');
+  const c=d.confianza||{};
+  setConf('prov',c.proveedor||0);setConf('rut',c.rut||0);
+  setConf('num',c.numero_factura||0);setConf('fecha',c.fecha||0);
+  el('items-body').innerHTML='';
+  (d.items||[]).forEach(it=>addItemRow(it));
+
+  // Handle inline vs external freight
+  const inlineFlete = d.flete_incluido_en_factura === true;
+  el('freight-inline-notice').style.display = inlineFlete ? 'block' : 'none';
+  el('freight-external-form').style.display = inlineFlete ? 'none' : 'block';
+  if(inlineFlete){
+    el('fr-neto').value=''; el('fr-iva').value=''; el('fr-total').value='';
+  } else {
+    calcFreight();
+  }
+
+  // Update hint
+  if(inlineFlete){
+    el('items-hint').textContent='✓ Flete ya incluido por ítem (Coca Cola Embonor). El costo real se calcula sumando Neto + Flete/ítem + IVA + ILA.';
+    el('items-hint').style.color='var(--accent3)';
+  } else {
+    el('items-hint').textContent='💡 Cada ítem tiene su impuesto asignado automáticamente. Podés corregirlo si es necesario.';
+    el('items-hint').style.color='var(--text-muted)';
+  }
+
+  if(d.observacion) alert2('alert2','al-info','💬','<strong>Nota IA:</strong> '+esc(d.observacion));
+  const low=Object.entries(c).filter(([,v])=>v<65).map(([k])=>k);
+  if(low.length) alert2('alert2','al-warn','⚠','Confianza baja en: <strong>'+low.join(', ')+'</strong>. Revisá esos campos antes de continuar.');
+}
+
+function addItemRow(it={}){
+  const defTax=PATTERNS[activePat]?.defTax||'iva';
+  const taxKey=it.tipo_impuesto||defTax;
+  const opts=Object.entries(TAXES).map(([k,t])=>`<option value="${k}"${k===taxKey?' selected':''}>${t.label}</option>`).join('');
+  const tr=document.createElement('tr');
+  // Compute costo_real preview
+  const netoTotal = it.neto_total || (it.precio_neto_unitario * it.cantidad) || 0;
+  const costoReal = it.costo_real_item || 0;
+  tr.innerHTML=`
+    <td><input type="text" value="${esc(it.codigo||'')}" style="width:55px;font-size:11px;" placeholder="—"></td>
+    <td><input type="text" value="${esc(it.descripcion||'')}" placeholder="Producto..." style="min-width:120px;"></td>
+    <td><input type="number" value="${it.cantidad||1}" style="width:48px;" min="0.01" step="0.01"></td>
+    <td><input type="number" value="${it.precio_neto_unitario||''}" placeholder="0" style="width:80px;" step="0.01" oninput="calcFreight()"></td>
+    <td><input type="number" value="${it.flete_item||0}" placeholder="0" style="width:70px;" step="1" title="Flete por ítem (de la factura)"></td>
+    <td><select style="font-size:11px;min-width:120px;">${opts}</select></td>
+    <td class="tpct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">—</td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove();calcFreight()">✕</button></td>`;
+  const sel=tr.querySelector('select');
+  const pctTd=tr.querySelector('.tpct');
+  const upd=()=>{const t=TAXES[sel.value];pctTd.textContent=t.iva===0?'0%':Math.round((t.iva+t.extra)*100)+'%';};
+  sel.addEventListener('change',upd);upd();
+  el('items-body').appendChild(tr);
+}
+
+// Freight
+function calcFreight(){
+  const neto=parseFloat(el('fr-neto').value)||0;
+  const iva=Math.round(neto*.19);
+  const total=neto+iva;
+  el('fr-iva').value=iva||'';
+  el('fr-total').value=total||'';
+  if(neto>0){
+    const facNeto=getFactNeto();
+    if(facNeto>0){
+      const pct=((total/facNeto)*100).toFixed(1);
+      el('fr-preview').textContent=`→ El flete representa un ${pct}% del total de la factura. Se distribuirá proporcionalmente.`;
+    }
+  }else el('fr-preview').textContent='';
+}
+
+function getFactNeto(){
+  let t=0;
+  el('items-body').querySelectorAll('tr').forEach(tr=>{
+    const nums=tr.querySelectorAll('input[type=number]');
+    t+=(parseFloat(nums[0]?.value)||0)*(parseFloat(nums[1]?.value)||0);
+  });
+  return t;
+}
+
+// Costs
+function calcFinalCosts(){
+  const rows=[];
+  el('items-body').querySelectorAll('tr').forEach(tr=>{
+    const inputs=tr.querySelectorAll('input');
+    const nums=tr.querySelectorAll('input[type=number]');
+    const sel=tr.querySelector('select');
+    const desc=inputs[1]?.value||''; // index 1 = descripcion (after codigo)
+    const cant=parseFloat(nums[0]?.value)||0;
+    const neto=parseFloat(nums[1]?.value)||0;
+    const fleteItem=parseFloat(nums[2]?.value)||0; // per-item freight
+    if(!desc&&!neto) return;
+    rows.push({desc,cant,neto,fleteItem,tax:TAXES[sel?.value||'iva'],taxKey:sel?.value||'iva'});
+  });
+  if(!rows.length) return alert2('alert3','al-err','✗','No hay ítems para calcular.');
+
+  // Check if inline freight is active (Coca Cola mode)
+  const inlineFlete = el('freight-inline-notice').style.display !== 'none';
+  const freightExternal = parseFloat(el('fr-total').value)||0;
+  const totalNeto = rows.reduce((s,r)=>s+r.cant*r.neto,0);
+
+  finalCosts=rows.map(r=>{
+    const lineNeto=r.cant*r.neto;
+    const lineIVA=lineNeto*r.tax.iva;
+    const lineExtra=lineNeto*r.tax.extra;
+    const lineTax=lineIVA+lineExtra;
+    // Use per-item freight if inline, else distribute external freight proportionally
+    const fShare = inlineFlete
+      ? r.fleteItem
+      : (totalNeto>0 ? freightExternal*(lineNeto/totalNeto) : 0);
+    const costReal=lineNeto+lineTax+fShare;
+    return{desc:r.desc,cant:r.cant,neto:lineNeto,iva:lineIVA,extra:lineExtra,
+           tax:r.tax,taxKey:r.taxKey,fShare,costReal,
+           costRealUnit:r.cant>0?costReal/r.cant:0,inlineFlete};
+  });
+
+  const totalFlete = inlineFlete
+    ? finalCosts.reduce((s,c)=>s+c.fShare,0)
+    : freightExternal;
+
+  renderCosts(finalCosts, totalFlete);
+  goTo('step3',3);
+}
+
+function renderCosts(costs,freight){
+  const tbody=el('cost-body');tbody.innerHTML='';
+  let sN=0,sI=0,sF=0,sR=0;
+  costs.forEach(c=>{
+    const t=c.tax;
+    const badge=`<span class="tbadge ${t.badge}">${t.el}</span>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${esc(c.desc)} ${badge}</td>
+      <td style="text-align:right">${fmt(c.cant)}</td>
+      <td style="text-align:right">${peso(c.neto)}</td>
+      <td style="text-align:right">${peso(c.iva+c.extra)}</td>
+      <td style="text-align:right">${peso(c.fShare)}</td>
+      <td style="text-align:right;font-weight:700;color:var(--accent3);">${peso(c.costReal)}</td>`;
+    tbody.appendChild(tr);
+    sN+=c.neto;sI+=c.iva+c.extra;sF+=c.fShare;sR+=c.costReal;
+  });
+  const tfoot=document.createElement('tr');tfoot.className='hrow';
+  tfoot.innerHTML=`<td colspan="2" style="font-weight:700;font-family:'DM Sans',sans-serif;">TOTAL</td><td style="text-align:right">${peso(sN)}</td><td style="text-align:right">${peso(sI)}</td><td style="text-align:right">${peso(sF)}</td><td style="text-align:right;font-size:15px;">${peso(sR)}</td>`;
+  tbody.appendChild(tfoot);
+  el('t-neto').textContent=peso(sN);el('t-imp').textContent=peso(sI);
+  el('t-flete').textContent=peso(freight);el('t-real').textContent=peso(sR);
+}
+
+// Send to FUDO
+async function sendToFudo(){
+  const cfg=JSON.parse(localStorage.getItem('fsc2')||'{}');
+  if(!cfg.url||!cfg.tok) return alert2('alert3','al-err','✗','Configurá la URL y token de FUDO primero.');
+  goTo('step-send',null);
+  const payload={
+    provider:v('f-prov'),rut:v('f-rut'),receipt_number:v('f-num'),date:v('f-fecha'),category:v('f-cat'),
+    freight:{company:v('fr-empresa'),receipt:v('fr-num'),total:parseFloat(el('fr-total').value)||0},
+    items:finalCosts.map(c=>({description:c.desc,quantity:c.cant,net_unit_price:c.cant>0?c.neto/c.cant:0,tax_type:c.taxKey,taxes_amount:c.iva+c.extra,freight_share:c.fShare,real_cost:c.costReal,real_cost_unit:c.costRealUnit})),
+    totals:{net:finalCosts.reduce((s,c)=>s+c.neto,0),taxes:finalCosts.reduce((s,c)=>s+c.iva+c.extra,0),freight:parseFloat(el('fr-total').value)||0,real_total:finalCosts.reduce((s,c)=>s+c.costReal,0)},
+    notes:'Cargado con FacturaScan v2 · patrón:'+activePat
+  };
+  try{
+    const url=cfg.url.replace(/\/$/,'');
+    const res=await fetch(`${url}/api/v1/expenses`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.tok,'X-API-Secret':cfg.tok},
+      body:JSON.stringify(payload)
+    });
+    if(res.ok){const d=await res.json().catch(()=>({}));showSuccess(true,payload,d);}
+    else{const t=await res.text();showSuccess(false,payload,{status:res.status,msg:t});}
+  }catch(e){showSuccess(false,payload,{status:'Error de red/CORS',msg:e.message});}
+}
+
+function showSuccess(ok,payload,extra){
+  goTo('step4',4);
+  const rt=payload.totals.real_total;
+  el('succ-desc').textContent=ok?`Gasto de ${payload.provider} registrado en FUDO.`:`Datos calculados correctamente. Revisá la conexión con FUDO.`;
+  el('succ-grid').innerHTML=`
+    <div class="ic"><div class="lbl">Proveedor</div><div class="val" style="font-size:12px;">${esc(payload.provider||'—')}</div></div>
+    <div class="ic"><div class="lbl">Factura N°</div><div class="val" style="font-size:12px;">${esc(payload.receipt_number||'—')}</div></div>
+    <div class="ic"><div class="lbl">Fecha</div><div class="val">${esc(payload.date||'—')}</div></div>
+    <div class="ic"><div class="lbl">Costo real total</div><div class="val" style="color:var(--accent3);">${peso(rt)}</div></div>`;
+  if(!ok){
+    el('succ-extra').innerHTML=`<div class="alert al-warn" style="margin-top:12px;text-align:left;"><span class="a-i">⚠</span><div><strong>${esc(String(extra.status))}</strong>: ${esc(extra.msg)}<br><br>Pedí a soporte de FUDO la activación del endpoint <code>/api/v1/expenses</code>. Tu payload con todos los costos calculados está listo para usar con Zapier/n8n:</div></div><pre class="jdump">${esc(JSON.stringify(payload,null,2))}</pre>`;
+  }
+}
+
+// Nav
+const SECS=['step1','step-scan','step2','step3','step-send','step4'];
+function goTo(id,step){
+  SECS.forEach(s=>{const e=el(s);if(e)e.className='section'+(s===id?' active':'');});
+  if(step){[1,2,3,4].forEach(i=>{
+    const e=el('ps'+i);if(!e)return;
+    e.className='prog-step'+(i<step?' done':i===step?' active':''); // kept full class
+    e.className='ps'+(i<step?' done':i===step?' active':'');
+    const ln=el('pl'+i);if(ln)ln.className='pline'+(i<step?' done':'');
+  });}
+}
+function resetAll(){
+  imgFile=null;imgB64=null;extracted={};finalCosts=[];
+  el('prev-card').style.display='none';el('alert1').innerHTML='';
+  el('items-body').innerHTML='';el('fr-neto').value='';el('fr-iva').value='';el('fr-total').value='';el('fr-preview').textContent='';
+  goTo('step1',1);
+}
+function toggleEl(id,togId,openTxt,closeTxt){
+  const e=el(id),t=el(togId);
+  const isOpen=e.classList.contains('open');
+  e.className='collapsible '+(isOpen?'closed':'open');
+  if(t)t.textContent=isOpen?closeTxt:openTxt;
+}
+
+// Helpers
+function el(id){return document.getElementById(id);}
+function v(id){return el(id)?.value?.trim()||'';}
+function sv(id,val){const e=el(id);if(e)e.value=val;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function fmt(n){return Number.isInteger(n)?n:parseFloat(n).toFixed(2);}
+function peso(n){return '$'+Math.round(n||0).toLocaleString('es-CL');}
+function setConf(f,val){const e=el('c-'+f);if(!e)return;e.style.width=val+'%';e.className='cfill'+(val<60?' low':val<85?' med':'');}
+function alert2(tid,cls,icon,msg){const e=el(tid);if(e)e.innerHTML=`<div class="alert ${cls}"><span class="a-i">${icon}</span><div>${msg}</div></div>`;}
+
+loadConfig();
+</script>
+</body>
+</html>
