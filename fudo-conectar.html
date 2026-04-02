@@ -508,12 +508,17 @@ function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
   }
   const cats=S.g('cats')||[],pms=S.g('pms')||[],provs=S.g('provs')||[];
   if(cats.length||pms.length||provs.length) renderCat(cats,pms,provs);
-
-  // Event listeners — evita problemas de scope con onclick en GitHub Pages
-  document.getElementById('btn-con').addEventListener('click', connect);
-  document.getElementById('btn-worker').addEventListener('click', saveCredsToWorker);
-  document.getElementById('btn-test').addEventListener('click', testExpense);
 })();
+
+// Event listeners separados — garantiza que el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+  var btnCon    = document.getElementById('btn-con');
+  var btnWorker = document.getElementById('btn-worker');
+  var btnTest   = document.getElementById('btn-test');
+  if(btnCon)    btnCon.addEventListener('click',    function(){ connect(); });
+  if(btnWorker) btnWorker.addEventListener('click', function(){ saveCredsToWorker(); });
+  if(btnTest)   btnTest.addEventListener('click',   function(){ testExpense(); });
+});
 </script>
 </body>
 </html>
