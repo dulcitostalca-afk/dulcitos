@@ -354,6 +354,8 @@ async function saveCredsToWorker() {
     btn.disabled = false; btn.innerHTML = '☁️ Guardar en Worker';
   }
 }
+
+async function connect() {
   const key = gv('f-key'), sec = gv('f-sec');
   if (!key || !sec) return showAl('acreds','al-err','✗','Ingresá el apiKey y el apiSecret.');
   const btn = document.getElementById('btn-con');
