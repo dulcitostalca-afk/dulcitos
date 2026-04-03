@@ -473,28 +473,36 @@ async function startScan(){
 
   const hints={
     generic:'Detectá el formato automáticamente.',
-    coca_cola:`IMPORTANTE: Esta es una factura de Coca Cola Embonor S.A. Chile (RUT 93.281.000-K).
+    coca_cola:`CRÍTICO: Esta es una factura de Coca Cola Embonor S.A. Chile (RUT 93.281.000-K).
 
-La tabla tiene estas columnas exactas en orden: Código | Descripción | Cantidad | Precio Unitario | % Desc. | Neto Total | Flete Total | I.V.A. | Adicional
+La tabla tiene 8 columnas en este orden EXACTO:
+COLUMNA 1: Código
+COLUMNA 2: Descripción  
+COLUMNA 3: Cantidad
+COLUMNA 4: Precio Unitario  ← NO USAR ESTE VALOR
+COLUMNA 5: % Desc.          ← NO USAR ESTE VALOR
+COLUMNA 6: Neto Total       ← USAR ESTE (es el mayor valor de la fila)
+COLUMNA 7: Flete Total      ← USAR ESTE (segundo valor grande)
+COLUMNA 8: I.V.A.           ← USAR ESTE
+COLUMNA 9: Adicional        ← USAR ESTE (puede estar vacío = 0)
 
-REGLAS CRÍTICAS DE LECTURA:
-1. "neto_total" = leer EXACTAMENTE la columna "Neto Total" (NO Precio Unitario). Es el valor después de aplicar el descuento.
-2. "flete_item" = leer EXACTAMENTE la columna "Flete Total" por ítem. Es un número grande (ej: 1.429, 312, 1.972).
-3. "iva_item" = leer EXACTAMENTE la columna "I.V.A." por ítem (ej: 1.245, 407, 1.758).
-4. "adicional_item" = leer EXACTAMENTE la columna "Adicional" por ítem (puede estar vacío = 0).
-5. "costo_real_item" = Neto Total + Flete Total + I.V.A. + Adicional (suma las 4 columnas).
-6. "cantidad" = columna Cantidad (número de displays/paquetes, ej: 1, 2, 5).
-7. En la Descripción busca el patrón "X0N" donde N es el número de unidades por display (ej: X06 = 6 unidades, X12 = 12 unidades).
-8. "unidades_por_display" = el número después de X0 en la descripción (ej: MONSTER ULTRA X06 → 6, COCA COLA X12 → 12).
-9. "total_unidades" = cantidad × unidades_por_display (ej: 2 displays × 6 unidades = 12 unidades).
-10. "costo_real_por_unidad" = costo_real_item / total_unidades.
+REGLAS ABSOLUTAS:
+- "neto_total" = COLUMNA 6 (Neto Total). NUNCA uses Precio Unitario.
+- "flete_item" = COLUMNA 7 (Flete Total). SIEMPRE tiene un valor grande, no 0.
+- "iva_item" = COLUMNA 8 (I.V.A.)
+- "adicional_item" = COLUMNA 9 (Adicional)
+- "costo_real_item" = neto_total + flete_item + iva_item + adicional_item
 
-EJEMPLO REAL de esta factura:
-- MONSTER ULTRA X06 473CC: cantidad=1, neto_total=5122, flete=1429, iva=1245, adicional=512 → costo_real=8308, unidades_por_display=6, total_unidades=6, costo_por_unidad=1385
-- COCA COLA X06 PET 250CC: cantidad=1, neto_total=1831, flete=312, iva=407, adicional=330 → costo_real=2880, unidades_por_display=6, total_unidades=6, costo_por_unidad=480
+VERIFICACIÓN OBLIGATORIA: Para cada ítem, el costo_real_item debe ser mayor que el neto_total. Si costo_real_item <= neto_total, es que leíste mal las columnas.
 
-El flete ya está distribuido por ítem — NO hay flete externo separado.
-I.A.B.A. 18% aplica a bebidas analcohólicas azucaradas. I.A.B.A. 10% aplica a otras bebidas.`,
+EJEMPLO REAL de esta factura (verificá que tus números coincidan):
+- MONSTER ULTRA X06 473CC: neto_total=5122, flete=1429, iva=1245, adicional=512 → costo_real=8308
+- COCA COLA X06 PET 250CC: neto_total=1831, flete=312, iva=407, adicional=330 → costo_real=2880
+- VITAL SIN GAS X06 PET 1.600 (cant 2): neto_total=7279, flete=1972, iva=1758, adicional=0 → costo_real=11009
+- COCA COLA X06 LATA 350CC (cant 5): neto_total=12622, flete=3115, iva=2989, adicional=2272 → costo_real=20998
+
+Para unidades: busca "X0N" en descripción → N = unidades por display. Total unidades = cantidad × N.
+El flete ya está en la factura por ítem — NO hay flete externo.`,
     harina:'Esta factura puede contener harina de trigo. La harina tiene impuesto específico del 12% sobre precio neto, más IVA 19%.',
     alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) más IVA 19%.',
   }[activePat];
@@ -613,6 +621,8 @@ function addItemRow(it={}){
   const opts=Object.entries(TAXES).map(([k,t])=>`<option value="${k}"${k===taxKey?' selected':''}>${t.label}</option>`).join('');
   const tr=document.createElement('tr');
   const netoTotal = it.neto_total || it.precio_neto_unitario || 0;
+  const ivaItem = it.iva_item || 0;
+  const adicionalItem = it.adicional_item || 0;
   const unidadesDisplay = it.unidades_por_display || 1;
   const totalUnidades = it.total_unidades || (it.cantidad * unidadesDisplay) || 1;
   const costoUnit = it.costo_real_por_unidad || 0;
@@ -621,11 +631,13 @@ function addItemRow(it={}){
     <td><input type="text" value="${esc(it.codigo||'')}" style="width:55px;font-size:11px;" placeholder="—"></td>
     <td><input type="text" value="${esc(it.descripcion||'')}" placeholder="Producto..." style="min-width:120px;">${unitInfo}</td>
     <td><input type="number" value="${it.cantidad||1}" style="width:48px;" min="0.01" step="0.01"></td>
-    <td><input type="number" value="${netoTotal||''}" placeholder="0" style="width:80px;" step="1" title="Neto Total (columna Neto Total de la factura)" oninput="calcFreight()"></td>
+    <td><input type="number" value="${netoTotal||''}" placeholder="0" style="width:80px;" step="1" title="Neto Total de la factura" oninput="calcFreight()"></td>
     <td><input type="number" value="${it.flete_item||0}" placeholder="0" style="width:70px;" step="1" title="Flete Total por ítem"></td>
     <td><select style="font-size:11px;min-width:120px;">${opts}</select></td>
     <td class="tpct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">—</td>
-    <td><button class="del-btn" onclick="this.closest('tr').remove();calcFreight()">✕</button></td>`;
+    <td><button class="del-btn" onclick="this.closest('tr').remove();calcFreight()">✕</button></td>
+    <input type="hidden" class="h-iva" value="${ivaItem}">
+    <input type="hidden" class="h-adic" value="${adicionalItem}">`;
   const sel=tr.querySelector('select');
   const pctTd=tr.querySelector('.tpct');
   const upd=()=>{const t=TAXES[sel.value];pctTd.textContent=t.iva===0?'0%':Math.round((t.iva+t.extra)*100)+'%';};
@@ -667,10 +679,13 @@ function calcFinalCosts(){
     const sel=tr.querySelector('select');
     const desc=inputs[1]?.value||'';
     const cant=parseFloat(nums[0]?.value)||0;
-    const neto=parseFloat(nums[1]?.value)||0; // neto_total
-    const fleteItem=parseFloat(nums[2]?.value)||0;
+    const neto=parseFloat(nums[1]?.value)||0; // neto_total de la factura
+    const fleteItem=parseFloat(nums[2]?.value)||0; // flete_total por ítem
+    // Usar IVA y adicional reales de la factura si están disponibles
+    const ivaReal=parseFloat(tr.querySelector('.h-iva')?.value)||0;
+    const adicReal=parseFloat(tr.querySelector('.h-adic')?.value)||0;
     if(!desc&&!neto) return;
-    rows.push({desc,cant,neto,fleteItem,tax:TAXES[sel?.value||'iva'],taxKey:sel?.value||'iva'});
+    rows.push({desc,cant,neto,fleteItem,ivaReal,adicReal,tax:TAXES[sel?.value||'iva'],taxKey:sel?.value||'iva'});
   });
   if(!rows.length) return alert2('alert3','al-err','✗','No hay ítems para calcular.');
 
@@ -679,14 +694,14 @@ function calcFinalCosts(){
   const totalNeto = rows.reduce((s,r)=>s+r.neto,0);
 
   finalCosts=rows.map(r=>{
-    const lineNeto=r.neto; // ya es el neto total de la línea
-    const lineIVA=Math.round(lineNeto*r.tax.iva);
-    const lineExtra=Math.round(lineNeto*r.tax.extra);
-    const lineTax=lineIVA+lineExtra;
+    const lineNeto=r.neto;
+    // Si tenemos IVA real de la factura (Coca Cola), usarlo. Si no, calcular.
+    const lineIVA = inlineFlete && r.ivaReal > 0 ? r.ivaReal : Math.round(lineNeto*r.tax.iva);
+    const lineExtra = inlineFlete && r.adicReal >= 0 ? r.adicReal : Math.round(lineNeto*r.tax.extra);
     const fShare = inlineFlete
       ? r.fleteItem
       : (totalNeto>0 ? freightExternal*(lineNeto/totalNeto) : 0);
-    const costReal=lineNeto+lineTax+fShare;
+    const costReal=lineNeto+lineIVA+lineExtra+fShare;
     return{desc:r.desc,cant:r.cant,neto:lineNeto,iva:lineIVA,extra:lineExtra,
            tax:r.tax,taxKey:r.taxKey,fShare,costReal,
            costRealUnit:r.cant>0?costReal/r.cant:0,inlineFlete};
