@@ -530,22 +530,25 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
 Campos no encontrados: usar "" o 0. SOLO el JSON.`;
 
   try{
+    // Convertir imagen a formato OpenAI
+    const imageUrl = `data:${imgFile.type};base64,${imgB64}`;
     const res=await fetch('https://fudo-proxy.dulcitostalca.workers.dev/scan-invoice',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:2000,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:imgFile.type,data:imgB64}},
-          {type:'text',text:prompt}
-        ]}]
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image_url', image_url:{url: imageUrl}},
+            {type:'text', text:prompt}
+          ]
+        }]
       })
     });
     clearInterval(iv);
     if(!res.ok) throw new Error('HTTP '+res.status+': '+await res.text());
     const d=await res.json();
-    const raw=d.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim();
+    const raw=d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
     extracted=JSON.parse(raw);
     fillStep2(extracted);
     goTo('step2',2);
