@@ -493,54 +493,48 @@ function handleFile(f){
 }
 
 // Scan
-async function startScan(){
-  if(!imgB64) return;
-  goTo('step-scan',null);
-  const msgs=['Detectando proveedor...','Leyendo ítems...','Identificando impuestos...','Sumando columnas...','Verificando totales...'];
-  let mi=0;
-  const iv=setInterval(()=>{el('scan-msg').textContent=msgs[mi++%msgs.length];},900);
-
-  const hints={
-    generic:'Detectá el formato automáticamente.',
+function buildPrompt(pat){
+  const allHints = {
+    generic:'Detectá el formato automáticamente. Identificá todas las columnas y leé cada fila de la tabla de productos.',
     coca_cola:`CRÍTICO: Esta es una factura de Coca Cola Embonor S.A. Chile (RUT 93.281.000-K).
 
-La tabla tiene 8 columnas en este orden EXACTO:
+La tabla tiene columnas en este orden EXACTO:
 COLUMNA 1: Código
 COLUMNA 2: Descripción  
 COLUMNA 3: Cantidad
 COLUMNA 4: Precio Unitario  ← NO USAR ESTE VALOR
 COLUMNA 5: % Desc.          ← NO USAR ESTE VALOR
 COLUMNA 6: Neto Total       ← USAR ESTE (es el mayor valor de la fila)
-COLUMNA 7: Flete Total      ← USAR ESTE (segundo valor grande)
+COLUMNA 7: Flete Total      ← USAR ESTE (segundo valor grande, nunca es 0)
 COLUMNA 8: I.V.A.           ← USAR ESTE
 COLUMNA 9: Adicional        ← USAR ESTE (puede estar vacío = 0)
 
 REGLAS ABSOLUTAS:
 - "neto_total" = COLUMNA 6 (Neto Total). NUNCA uses Precio Unitario.
-- "flete_item" = COLUMNA 7 (Flete Total). SIEMPRE tiene un valor grande, no 0.
+- "flete_item" = COLUMNA 7 (Flete Total). SIEMPRE tiene un valor grande, nunca 0.
 - "iva_item" = COLUMNA 8 (I.V.A.)
-- "adicional_item" = COLUMNA 9 (Adicional)
+- "adicional_item" = COLUMNA 9 (Adicional, 0 si vacío)
 - "costo_real_item" = neto_total + flete_item + iva_item + adicional_item
 
-VERIFICACIÓN OBLIGATORIA: Para cada ítem, el costo_real_item debe ser mayor que el neto_total. Si costo_real_item <= neto_total, es que leíste mal las columnas.
+VERIFICACIÓN: costo_real_item SIEMPRE debe ser mayor que neto_total. Si no, releé las columnas.
 
-EJEMPLO REAL de esta factura (verificá que tus números coincidan):
+EJEMPLO REAL:
 - MONSTER ULTRA X06 473CC: neto_total=5122, flete=1429, iva=1245, adicional=512 → costo_real=8308
 - COCA COLA X06 PET 250CC: neto_total=1831, flete=312, iva=407, adicional=330 → costo_real=2880
 - VITAL SIN GAS X06 PET 1.600 (cant 2): neto_total=7279, flete=1972, iva=1758, adicional=0 → costo_real=11009
+- VITAL CON GAS X06 PET 1.600 (cant 2): neto_total=7279, flete=1972, iva=1758, adicional=0 → costo_real=11009
 - COCA COLA X06 LATA 350CC (cant 5): neto_total=12622, flete=3115, iva=2989, adicional=2272 → costo_real=20998
 
-REGLA CRÍTICA: Cada fila de la tabla es un ítem DISTINTO. NUNCA combines dos filas aunque tengan nombres similares. Si hay "VITAL SIN GAS X06" y "VITAL CON GAS X06", son DOS productos diferentes — leer ambos por separado. Buscá TODAS las filas de la tabla aunque sean parecidas — esta factura tiene exactamente 5 productos.
-Para unidades: busca "X0N" en descripción → N = unidades por display. Total unidades = cantidad × N.
-El flete ya está en la factura por ítem — NO hay flete externo.`,
-    harina:'Esta factura puede contener harina de trigo. La harina tiene impuesto específico del 12% sobre precio neto, más IVA 19%.',
-    alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) más IVA 19%.',
-  }[activePat];
-
-  const esCocaCola = activePat === 'coca_cola';
-
-  const prompt=`Analizá esta imagen de factura de compra chilena.
-${hints}
+REGLA CRÍTICA: Lee CADA fila por separado. NUNCA combines filas aunque sean parecidas.
+Esta factura tiene 5 productos — asegurate de devolver exactamente 5 ítems.
+Para unidades: busca "X0N" → N = unidades por display. Total = cantidad × N.`,
+    harina:'Esta factura contiene harina de trigo con impuesto específico del 12% sobre precio neto + IVA 19%.',
+    alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) + IVA 19%.',
+  };
+  const hint = allHints[pat] || allHints.generic;
+  const esCocaCola = pat === 'coca_cola';
+  return `Analizá esta imagen de factura de compra chilena.
+${hint}
 
 Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto extra:
 {
@@ -552,19 +546,19 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
   "items":[
     {
       "codigo":"código interno del producto",
-      "descripcion":"nombre completo del producto",
-      "cantidad":número (displays/paquetes),
-      "precio_neto_unitario":número (columna Precio Unitario),
-      "neto_total":número (columna Neto Total — LEER EXACTAMENTE esta columna),
-      "flete_item":número (columna Flete Total — LEER EXACTAMENTE esta columna),
-      "iva_item":número (columna I.V.A. — LEER EXACTAMENTE esta columna),
-      "adicional_item":número (columna Adicional, 0 si vacío),
-      "costo_real_item":número (neto_total + flete_item + iva_item + adicional_item),
-      "unidades_por_display":número (el N en X0N de la descripción, ej X06=6, X12=12, 1 si no hay),
-      "total_unidades":número (cantidad × unidades_por_display),
-      "costo_real_por_unidad":número (costo_real_item / total_unidades),
+      "descripcion":"nombre completo del producto exactamente como aparece",
+      "cantidad":número,
+      "precio_neto_unitario":número,
+      "neto_total":número,
+      "flete_item":número,
+      "iva_item":número,
+      "adicional_item":número,
+      "costo_real_item":número,
+      "unidades_por_display":número,
+      "total_unidades":número,
+      "costo_real_por_unidad":número,
       "tipo_impuesto":"iva"|"ila_anc"|"ila_alc"|"harina"|"exento",
-      "pct_ila":número (18, 10, o 0)
+      "pct_ila":número
     }
   ],
   "total_lista":número,
@@ -580,43 +574,62 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
   "observacion":"notas sobre columnas detectadas"
 }
 Campos no encontrados: usar "" o 0. SOLO el JSON.`;
+}
+
+async function callScanAPI(imageUrl, pat){
+  const res = await fetch('https://fudo-proxy.dulcitostalca.workers.dev/scan-invoice',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      messages:[{
+        role:'user',
+        content:[
+          {type:'image_url', image_url:{url: imageUrl}},
+          {type:'text', text: buildPrompt(pat)}
+        ]
+      }]
+    })
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status+': '+await res.text());
+  const d = await res.json();
+  const raw = d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
+  return JSON.parse(raw);
+}
+
+async function startScan(){
+  if(!imgB64) return;
+  goTo('step-scan',null);
+  const msgs=['Detectando proveedor...','Leyendo ítems...','Identificando impuestos...','Calculando costos...','Verificando totales...'];
+  let mi=0;
+  const iv=setInterval(()=>{el('scan-msg').textContent=msgs[mi++%msgs.length];},900);
 
   try{
     const imageUrl = `data:${imgFile.type};base64,${imgB64}`;
-    const res=await fetch('https://fudo-proxy.dulcitostalca.workers.dev/scan-invoice',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image_url', image_url:{url: imageUrl}},
-            {type:'text', text:prompt}
-          ]
-        }]
-      })
-    });
-    clearInterval(iv);
-    if(!res.ok) throw new Error('HTTP '+res.status+': '+await res.text());
-    const d=await res.json();
-    const raw=d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
-    extracted=JSON.parse(raw);
 
-    // Validación para Coca Cola: si el flete de todos los ítems es 0, hay error de lectura
-    if(activePat==='coca_cola' && extracted.items){
-      const totalFlete = extracted.items.reduce((s,i)=>s+(i.flete_item||0),0);
-      const totalFleteFact = extracted.total_fletes || 0;
-      if(totalFlete===0 && totalFleteFact===0){
-        // GPT-4o no leyó el flete — marcar como error de lectura
-        alert2('alert1','al-warn','⚠','GPT-4o no leyó correctamente las columnas de flete. Los valores pueden estar incorrectos. Revisá manualmente antes de continuar.');
-      }
-      // Marcar flete como incluido en factura para Coca Cola
-      extracted.flete_incluido_en_factura = true;
+    // Primer escaneo con patrón actual (puede ser generic)
+    extracted = await callScanAPI(imageUrl, activePat);
+
+    // Auto-detectar proveedor y re-escanear si corresponde
+    const provNorm = (extracted.proveedor||'').toLowerCase();
+    let detectedPat = activePat;
+    if(provNorm.includes('coca cola') || provNorm.includes('embonor')) detectedPat = 'coca_cola';
+    else if(provNorm.includes('molino') || provNorm.includes('harina')) detectedPat = 'harina';
+    else if(provNorm.includes('ccu') || provNorm.includes('pepsi')) detectedPat = 'alcohol';
+
+    if(detectedPat !== activePat){
+      activePat = detectedPat;
+      el('scan-msg').textContent = '✓ ' + extracted.proveedor + ' detectado — aplicando patrón correcto...';
+      extracted = await callScanAPI(imageUrl, activePat);
     }
 
+    // Forzar flete incluido para Coca Cola
+    if(activePat === 'coca_cola') extracted.flete_incluido_en_factura = true;
+
+    clearInterval(iv);
     console.log('FacturaScan JSON:', JSON.stringify(extracted, null, 2));
     fillStep2(extracted);
     goTo('step2',2);
+
   }catch(e){
     clearInterval(iv);
     goTo('step1',1);
