@@ -172,15 +172,27 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 .item-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;}
 .item-card-name{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);flex:1;}
 .item-card-code{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:3px;}
-.unit-price{background:var(--accent);color:white;border-radius:10px;padding:10px 16px;text-align:center;min-width:110px;flex-shrink:0;}
-.unit-price .up-label{font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
-.unit-price .up-value{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;margin-top:2px;}
-.unit-price .up-sub{font-size:10px;opacity:.7;font-family:'DM Mono',monospace;margin-top:2px;}
+.unit-price{background:#e85d3a;color:white;border-radius:10px;padding:10px 16px;text-align:center;min-width:120px;flex-shrink:0;box-shadow:3px 3px 0 rgba(0,0,0,.15);}
+.unit-price .up-label{font-size:9px;opacity:.85;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
+.unit-price .up-value{font-size:26px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;margin-top:2px;}
+.unit-price .up-sub{font-size:10px;opacity:.8;font-family:'DM Mono',monospace;margin-top:2px;}
 .item-card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 @media(max-width:480px){.item-card-grid{grid-template-columns:repeat(2,1fr);}}
 .ic-mini{background:var(--surface2);border-radius:6px;padding:8px 10px;}
 .ic-mini .lbl{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
 .ic-mini .val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;margin-top:2px;}
+.cost-real-bar{margin-top:10px;border:2px solid #1a1a2e;border-radius:6px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;background:transparent;}
+.cost-real-bar .cr-label{font-size:11px;font-family:'DM Mono',monospace;color:#1a1a2e;font-weight:600;}
+.cost-real-bar .cr-value{font-size:18px;font-weight:800;font-family:'DM Mono',monospace;color:#1a1a2e;}
+.item-edit-row{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;}
+.item-edit-field{display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px;}
+.item-edit-field label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
+.item-edit-field input{background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:14px;font-weight:700;font-family:'DM Mono',monospace;width:100%;text-align:center;}
+.item-edit-field input:focus{border-color:#e85d3a;background:white;outline:none;}
+.item-error{border-color:#e85d3a !important;background:#fff5f5 !important;}
+.verify-bar{display:none;margin-top:12px;border-radius:8px;padding:10px 14px;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;gap:10px;flex-wrap:wrap;}
+.verify-bar.vok{background:#f0fdf4;border:1.5px solid #bbf7d0;color:#15803d;}
+.verify-bar.verr{background:#fef2f2;border:1.5px solid #fecaca;color:#dc2626;}
 .item-del{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:2px 6px;border-radius:4px;}
 .item-del:hover{background:#fef2f2;color:var(--accent2);}
 </style>
@@ -311,6 +323,7 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
     </div>
     <!-- Card view for mobile/desktop with prominent unit price -->
     <div id="items-cards" style="display:none;"></div>
+    <div id="verify-bar" class="verify-bar" style="display:none;"></div>
     <div class="hint" style="margin-top:9px;" id="items-hint">💡 Revisá que los valores coincidan con la factura antes de continuar.</div>
   </div>
 
@@ -517,6 +530,7 @@ REGLAS ABSOLUTAS:
 - "costo_real_item" = neto_total + flete_item + iva_item + adicional_item
 
 VERIFICACIÓN: costo_real_item SIEMPRE debe ser mayor que neto_total. Si no, releé las columnas.
+CAMPO EXTRA: Buscá en la factura la celda "TOTAL LIQUIDO: N" — ese N es el total de displays. Guardalo en "total_displays_factura".
 
 EJEMPLO REAL:
 - MONSTER ULTRA X06 473CC: neto_total=5122, flete=1429, iva=1245, adicional=512 → costo_real=8308
@@ -526,7 +540,8 @@ EJEMPLO REAL:
 - COCA COLA X06 LATA 350CC (cant 5): neto_total=12622, flete=3115, iva=2989, adicional=2272 → costo_real=20998
 
 REGLA CRÍTICA: Lee CADA fila por separado. NUNCA combines filas aunque sean parecidas.
-Esta factura tiene 5 productos — asegurate de devolver exactamente 5 ítems.
+FORMATO CANTIDAD: La columna Cantidad puede mostrar "1/0", "2/0", "5/0" — el número ANTES de "/" es la cantidad real. "1/0"=1, "2/0"=2, "5/0"=5. NUNCA interpretes "1/0" como 10 ni "1/1" como 11.
+Esta factura tiene 5 productos — devolvé exactamente 5 ítems.
 Para unidades: busca "X0N" → N = unidades por display. Total = cantidad × N.`,
     harina:'Esta factura contiene harina de trigo con impuesto específico del 12% sobre precio neto + IVA 19%.',
     alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) + IVA 19%.',
@@ -570,6 +585,7 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
   "iva_factura":número,
   "total_factura":número,
   "flete_incluido_en_factura":${esCocaCola},
+  "total_displays_factura":número (campo TOTAL LIQUIDO de la factura, 0 si no aparece),
   "confianza":{"proveedor":0-100,"rut":0-100,"numero_factura":0-100,"fecha":0-100,"items":0-100,"totales":0-100},
   "observacion":"notas sobre columnas detectadas"
 }
@@ -611,15 +627,19 @@ async function startScan(){
 
     // Auto-detectar proveedor y re-escanear si corresponde
     const provNorm = (extracted.proveedor||'').toLowerCase();
-    let detectedPat = activePat;
+    let detectedPat = 'generic';
     if(provNorm.includes('coca cola') || provNorm.includes('embonor')) detectedPat = 'coca_cola';
     else if(provNorm.includes('molino') || provNorm.includes('harina')) detectedPat = 'harina';
     else if(provNorm.includes('ccu') || provNorm.includes('pepsi')) detectedPat = 'alcohol';
 
-    if(detectedPat !== activePat){
+    console.log('Proveedor detectado:', extracted.proveedor, '→ patrón:', detectedPat, '| patrón activo:', activePat);
+
+    if(detectedPat !== 'generic' && detectedPat !== activePat){
       activePat = detectedPat;
-      el('scan-msg').textContent = '✓ ' + extracted.proveedor + ' detectado — aplicando patrón correcto...';
+      el('scan-msg').textContent = '✓ ' + extracted.proveedor + ' — re-escaneando con patrón correcto...';
+      console.log('Re-escaneando con patrón:', activePat);
       extracted = await callScanAPI(imageUrl, activePat);
+      console.log('Re-scan JSON:', JSON.stringify(extracted, null, 2));
     }
 
     // Forzar flete incluido para Coca Cola
@@ -654,6 +674,7 @@ function fillStep2(d){
     el('items-cards').style.display='block';
     el('items-cards').innerHTML='';
     (d.items||[]).forEach((it,i)=>addItemCard(it,i));
+    setTimeout(verifyTotal, 100);
   } else {
     document.querySelector('.itbl').style.display='table';
     el('items-cards').style.display='none';
@@ -711,45 +732,157 @@ function addItemRow(it={}){
 
 function addItemCard(it, idx){
   const costoReal = it.costo_real_item || (it.neto_total + it.flete_item + it.iva_item + it.adicional_item);
-  const unidades = it.total_unidades || (it.cantidad * (it.unidades_por_display||1));
-  const pxu = it.costo_real_por_unidad || (unidades > 0 ? costoReal/unidades : 0);
+  const unidadesDisplay = it.unidades_por_display || 1;
+  const cant = it.cantidad || 1;
+  const totalUnidades = cant * unidadesDisplay;
+  const pxu = totalUnidades > 0 ? costoReal / totalUnidades : 0;
+
   const card = document.createElement('div');
   card.className = 'item-card';
   card.dataset.idx = idx;
+  card.dataset.costoReal = costoReal;
   card.innerHTML = `
-    <button class="item-del" onclick="this.closest('.item-card').remove()">✕</button>
+    <button class="item-del" onclick="this.closest('.item-card').remove();verifyTotal()">✕</button>
     <div class="item-card-header">
-      <div>
-        <div class="item-card-name">${esc(it.descripcion||'—')}</div>
-        <div class="item-card-code">Cód: ${esc(it.codigo||'—')} · ${it.cantidad} display${it.cantidad>1?'s':''} × ${it.unidades_por_display||1} u = ${unidades} unidades</div>
+      <div style="flex:1;">
+        <div class="item-card-name" id="name-${idx}">${esc(it.descripcion||'—')}</div>
+        <div class="item-card-code" id="sub-${idx}">Cód: ${esc(it.codigo||'—')} · ${cant} display${cant>1?'s':''} × ${unidadesDisplay}u = ${totalUnidades} unidades</div>
       </div>
-      <div class="unit-price">
+      <div class="unit-price" id="uprice-${idx}">
         <div class="up-label">Precio/unidad</div>
-        <div class="up-value">$${Math.round(pxu).toLocaleString('es-CL')}</div>
-        <div class="up-sub">${unidades} unidades</div>
+        <div class="up-value" id="upval-${idx}">$${Math.round(pxu).toLocaleString('es-CL')}</div>
+        <div class="up-sub" id="upsub-${idx}">${totalUnidades} unidades</div>
       </div>
     </div>
-    <div class="item-card-grid">
-      <div class="ic-mini"><div class="lbl">Neto total</div><div class="val">$${(it.neto_total||0).toLocaleString('es-CL')}</div></div>
-      <div class="ic-mini"><div class="lbl">Flete</div><div class="val">$${(it.flete_item||0).toLocaleString('es-CL')}</div></div>
-      <div class="ic-mini"><div class="lbl">IVA</div><div class="val">$${(it.iva_item||0).toLocaleString('es-CL')}</div></div>
-      <div class="ic-mini"><div class="lbl">Adicional/ILA</div><div class="val">$${(it.adicional_item||0).toLocaleString('es-CL')}</div></div>
+
+    <!-- Campos editables -->
+    <div class="item-edit-row">
+      <div class="item-edit-field">
+        <label>Cantidad displays</label>
+        <input type="number" id="cant-${idx}" value="${cant}" min="1" step="1"
+          oninput="recalcCard(${idx})" style="border-color:#e85d3a;">
+      </div>
+      <div class="item-edit-field">
+        <label>Neto total</label>
+        <input type="number" id="neto-${idx}" value="${it.neto_total||0}" min="0"
+          oninput="recalcCard(${idx})">
+      </div>
+      <div class="item-edit-field">
+        <label>Flete</label>
+        <input type="number" id="flete-${idx}" value="${it.flete_item||0}" min="0"
+          oninput="recalcCard(${idx})">
+      </div>
+      <div class="item-edit-field">
+        <label>IVA</label>
+        <input type="number" id="iva-${idx}" value="${it.iva_item||0}" min="0"
+          oninput="recalcCard(${idx})">
+      </div>
+      <div class="item-edit-field">
+        <label>Adicional/ILA</label>
+        <input type="number" id="adic-${idx}" value="${it.adicional_item||0}" min="0"
+          oninput="recalcCard(${idx})">
+      </div>
     </div>
-    <div style="margin-top:10px;background:var(--accent2);color:white;border-radius:6px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:11px;font-family:'DM Mono',monospace;opacity:.8;">Costo real total</span>
-      <span style="font-size:16px;font-weight:800;font-family:'DM Mono',monospace;">$${Math.round(costoReal).toLocaleString('es-CL')}</span>
+
+    <div class="cost-real-bar" id="cbar-${idx}">
+      <span class="cr-label">Costo real total</span>
+      <span class="cr-value" id="creal-${idx}">$${Math.round(costoReal).toLocaleString('es-CL')}</span>
     </div>
-    <input type="hidden" class="h-neto" value="${it.neto_total||0}">
-    <input type="hidden" class="h-flete" value="${it.flete_item||0}">
-    <input type="hidden" class="h-iva" value="${it.iva_item||0}">
-    <input type="hidden" class="h-adic" value="${it.adicional_item||0}">
-    <input type="hidden" class="h-cant" value="${it.cantidad||1}">
+
     <input type="hidden" class="h-desc" value="${esc(it.descripcion||'')}">
     <input type="hidden" class="h-tax" value="${it.tipo_impuesto||'iva'}">
-    <input type="hidden" class="h-real" value="${Math.round(costoReal)}">
   `;
   el('items-cards').appendChild(card);
 }
+
+function recalcCard(idx){
+  const cant  = parseFloat(el('cant-'+idx)?.value)||1;
+  const neto  = parseFloat(el('neto-'+idx)?.value)||0;
+  const flete = parseFloat(el('flete-'+idx)?.value)||0;
+  const iva   = parseFloat(el('iva-'+idx)?.value)||0;
+  const adic  = parseFloat(el('adic-'+idx)?.value)||0;
+  const costoReal = neto + flete + iva + adic;
+
+  // Detectar unidades del nombre
+  const nameEl = el('name-'+idx);
+  const name = nameEl?.textContent||'';
+  const match = name.match(/X0?(\d+)/i);
+  const unidadesDisplay = match ? parseInt(match[1]) : 1;
+  const totalUnidades = cant * unidadesDisplay;
+  const pxu = totalUnidades > 0 ? costoReal / totalUnidades : 0;
+
+  // Actualizar displays
+  const subEl = el('sub-'+idx);
+  if(subEl) subEl.textContent = `${cant} display${cant>1?'s':''} × ${unidadesDisplay}u = ${totalUnidades} unidades`;
+  const upEl = el('upval-'+idx);
+  if(upEl) upEl.textContent = '$'+Math.round(pxu).toLocaleString('es-CL');
+  const upSubEl = el('upsub-'+idx);
+  if(upSubEl) upSubEl.textContent = totalUnidades+' unidades';
+  const crEl = el('creal-'+idx);
+  if(crEl) crEl.textContent = '$'+Math.round(costoReal).toLocaleString('es-CL');
+
+  // Update stored value
+  const card = el('cant-'+idx)?.closest('.item-card');
+  if(card) card.dataset.costoReal = costoReal;
+
+  verifyTotal();
+}
+
+// ── Verify total ──────────────────────────────────────────
+function verifyTotal(){
+  if(!el('items-cards') || el('items-cards').style.display==='none') return;
+  const cards = el('items-cards').querySelectorAll('.item-card');
+  const verifyEl = el('verify-bar');
+  if(!verifyEl) return;
+
+  // Verificación 1: suma de costos vs total factura
+  const sumCostos = Array.from(cards).reduce((s,c)=>s+parseFloat(c.dataset.costoReal||0),0);
+  const totalFact = extracted?.total_factura || 0;
+  const diffCosto = Math.abs(sumCostos - totalFact);
+
+  // Verificación 2: suma de displays vs TOTAL LIQUIDO
+  let displayErrors = [];
+  const totalDisplaysFact = extracted?.total_displays_factura || 0;
+  if(totalDisplaysFact > 0){
+    let sumDisplays = 0;
+    cards.forEach((card,i)=>{
+      const idx = card.dataset.idx || i;
+      sumDisplays += parseFloat(el('cant-'+idx)?.value)||0;
+    });
+    const diffDisplays = Math.abs(sumDisplays - totalDisplaysFact);
+    if(diffDisplays > 0){
+      displayErrors.push(`displays: ${sumDisplays} calculado vs ${totalDisplaysFact} en factura`);
+      // Resaltar campos de cantidad con error
+      cards.forEach((card,i)=>{
+        const idx = card.dataset.idx || i;
+        const cantEl = el('cant-'+idx);
+        if(cantEl) cantEl.className = diffDisplays > 0 ? 'item-error' : '';
+      });
+    }
+  }
+
+  verifyEl.style.display='flex';
+  verifyEl.style.flexDirection='column';
+  verifyEl.style.gap='4px';
+
+  const msgs = [];
+  if(totalFact > 0){
+    if(diffCosto <= 500){
+      msgs.push(`<div style="display:flex;justify-content:space-between;"><span>✓ Total verificado</span><span style="font-family:'DM Mono',monospace;">$${Math.round(sumCostos).toLocaleString('es-CL')} ≈ $${totalFact.toLocaleString('es-CL')}</span></div>`);
+      verifyEl.className='verify-bar vok';
+    } else {
+      msgs.push(`<div style="display:flex;justify-content:space-between;"><span>⚠ Diferencia $${Math.round(diffCosto).toLocaleString('es-CL')} en montos</span><span style="font-family:'DM Mono',monospace;">Calc: $${Math.round(sumCostos).toLocaleString('es-CL')} | Fact: $${totalFact.toLocaleString('es-CL')}</span></div>`);
+      verifyEl.className='verify-bar verr';
+    }
+  }
+  if(displayErrors.length > 0){
+    msgs.push(`<div>⚠ Error en ${displayErrors.join(', ')} — corregí la cantidad destacada en naranja</div>`);
+    verifyEl.className='verify-bar verr';
+  }
+  if(msgs.length === 0){ verifyEl.style.display='none'; return; }
+  verifyEl.innerHTML = msgs.join('');
+}
+
 function calcFreight(){
   const neto=parseFloat(el('fr-neto').value)||0;
   const iva=Math.round(neto*.19);
@@ -780,16 +913,17 @@ function calcFinalCosts(){
   const rows=[];
 
   if(inlineFlete){
-    // Read from cards
-    el('items-cards').querySelectorAll('.item-card').forEach(card=>{
-      const desc = card.querySelector('.h-desc')?.value||'';
-      const cant = parseFloat(card.querySelector('.h-cant')?.value)||1;
-      const neto = parseFloat(card.querySelector('.h-neto')?.value)||0;
-      const flete = parseFloat(card.querySelector('.h-flete')?.value)||0;
-      const iva = parseFloat(card.querySelector('.h-iva')?.value)||0;
-      const adic = parseFloat(card.querySelector('.h-adic')?.value)||0;
-      const taxKey = card.querySelector('.h-tax')?.value||'iva';
-      const costReal = parseFloat(card.querySelector('.h-real')?.value)||0;
+    // Read from editable card fields
+    el('items-cards').querySelectorAll('.item-card').forEach((card,i)=>{
+      const idx = card.dataset.idx || i;
+      const desc  = card.querySelector('.h-desc')?.value||'';
+      const taxKey= card.querySelector('.h-tax')?.value||'iva';
+      const cant  = parseFloat(el('cant-'+idx)?.value)||1;
+      const neto  = parseFloat(el('neto-'+idx)?.value)||0;
+      const flete = parseFloat(el('flete-'+idx)?.value)||0;
+      const iva   = parseFloat(el('iva-'+idx)?.value)||0;
+      const adic  = parseFloat(el('adic-'+idx)?.value)||0;
+      const costReal = neto + flete + iva + adic;
       if(!desc&&!neto) return;
       rows.push({desc,cant,neto,fShare:flete,iva,extra:adic,tax:TAXES[taxKey]||TAXES['iva'],taxKey,costReal,inlineFlete:true});
     });
