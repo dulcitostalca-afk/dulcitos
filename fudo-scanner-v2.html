@@ -530,9 +530,7 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
 Campos no encontrados: usar "" o 0. SOLO el JSON.`;
 
   try{
-    const PROXY = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
-    const ANTHROPIC_URL = PROXY + encodeURIComponent('https://api.anthropic.com/v1/messages');
-    const res=await fetch(ANTHROPIC_URL,{
+    const res=await fetch('https://fudo-proxy.dulcitostalca.workers.dev/scan-invoice',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
