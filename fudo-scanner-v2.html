@@ -165,6 +165,24 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 .cfill{height:100%;border-radius:1px;transition:width .5s;background:var(--accent3);}
 .cfill.med{background:var(--accent4);}
 .cfill.low{background:var(--accent2);}
+
+/* Item cards */
+.item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;position:relative;}
+.item-card:hover{border-color:var(--accent2);}
+.item-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.item-card-name{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;color:var(--accent);flex:1;}
+.item-card-code{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:3px;}
+.unit-price{background:var(--accent);color:white;border-radius:10px;padding:10px 16px;text-align:center;min-width:110px;flex-shrink:0;}
+.unit-price .up-label{font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
+.unit-price .up-value{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;margin-top:2px;}
+.unit-price .up-sub{font-size:10px;opacity:.7;font-family:'DM Mono',monospace;margin-top:2px;}
+.item-card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+@media(max-width:480px){.item-card-grid{grid-template-columns:repeat(2,1fr);}}
+.ic-mini{background:var(--surface2);border-radius:6px;padding:8px 10px;}
+.ic-mini .lbl{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;}
+.ic-mini .val{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;margin-top:2px;}
+.item-del{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;padding:2px 6px;border-radius:4px;}
+.item-del:hover{background:#fef2f2;color:var(--accent2);}
 </style>
 </head>
 <body>
@@ -291,7 +309,9 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
         <tbody id="items-body"></tbody>
       </table>
     </div>
-    <div class="hint" style="margin-top:9px;" id="items-hint">💡 Cada ítem tiene su impuesto asignado automáticamente. Podés corregirlo si es necesario.</div>
+    <!-- Card view for mobile/desktop with prominent unit price -->
+    <div id="items-cards" style="display:none;"></div>
+    <div class="hint" style="margin-top:9px;" id="items-hint">💡 Revisá que los valores coincidan con la factura antes de continuar.</div>
   </div>
 
   <div class="freight-card" id="freight-card">
@@ -510,6 +530,7 @@ EJEMPLO REAL de esta factura (verificá que tus números coincidan):
 - VITAL SIN GAS X06 PET 1.600 (cant 2): neto_total=7279, flete=1972, iva=1758, adicional=0 → costo_real=11009
 - COCA COLA X06 LATA 350CC (cant 5): neto_total=12622, flete=3115, iva=2989, adicional=2272 → costo_real=20998
 
+REGLA CRÍTICA: Cada fila de la tabla es un ítem DISTINTO. NUNCA combines dos filas aunque tengan nombres similares. Si hay "VITAL SIN GAS X06" y "VITAL CON GAS X06", son DOS productos diferentes — leer ambos por separado.
 Para unidades: busca "X0N" en descripción → N = unidades por display. Total unidades = cantidad × N.
 El flete ya está en la factura por ítem — NO hay flete externo.`,
     harina:'Esta factura puede contener harina de trigo. La harina tiene impuesto específico del 12% sobre precio neto, más IVA 19%.',
@@ -610,31 +631,39 @@ function fillStep2(d){
   const c=d.confianza||{};
   setConf('prov',c.proveedor||0);setConf('rut',c.rut||0);
   setConf('num',c.numero_factura||0);setConf('fecha',c.fecha||0);
-  el('items-body').innerHTML='';
-  (d.items||[]).forEach(it=>addItemRow(it));
+
+  const inlineFlete = d.flete_incluido_en_factura === true;
+
+  // Use card layout for inline flete (Coca Cola), table for others
+  if(inlineFlete){
+    el('items-body').innerHTML='';
+    document.querySelector('.itbl').style.display='none';
+    el('items-cards').style.display='block';
+    el('items-cards').innerHTML='';
+    (d.items||[]).forEach((it,i)=>addItemCard(it,i));
+  } else {
+    document.querySelector('.itbl').style.display='table';
+    el('items-cards').style.display='none';
+    el('items-body').innerHTML='';
+    (d.items||[]).forEach(it=>addItemRow(it));
+  }
 
   // Handle inline vs external freight
-  const inlineFlete = d.flete_incluido_en_factura === true;
   el('freight-inline-notice').style.display = inlineFlete ? 'block' : 'none';
   el('freight-external-form').style.display = inlineFlete ? 'none' : 'block';
   if(inlineFlete){
     el('fr-neto').value=''; el('fr-iva').value=''; el('fr-total').value='';
-  } else {
-    calcFreight();
-  }
-
-  // Update hint
-  if(inlineFlete){
-    el('items-hint').textContent='✓ Flete ya incluido por ítem (Coca Cola Embonor). El costo real se calcula sumando Neto + Flete/ítem + IVA + ILA.';
+    el('items-hint').textContent='✓ Flete incluido por ítem. Verificá que el precio/unidad coincida con tu cálculo manual.';
     el('items-hint').style.color='var(--accent3)';
   } else {
-    el('items-hint').textContent='💡 Cada ítem tiene su impuesto asignado automáticamente. Podés corregirlo si es necesario.';
+    calcFreight();
+    el('items-hint').textContent='💡 Revisá los valores antes de continuar.';
     el('items-hint').style.color='var(--text-muted)';
   }
 
   if(d.observacion) alert2('alert2','al-info','💬','<strong>Nota IA:</strong> '+esc(d.observacion));
   const low=Object.entries(c).filter(([,v])=>v<65).map(([k])=>k);
-  if(low.length) alert2('alert2','al-warn','⚠','Confianza baja en: <strong>'+low.join(', ')+'</strong>. Revisá esos campos antes de continuar.');
+  if(low.length) alert2('alert2','al-warn','⚠','Confianza baja en: <strong>'+low.join(', ')+'</strong>. Revisá esos campos.');
 }
 
 function addItemRow(it={}){
@@ -667,7 +696,47 @@ function addItemRow(it={}){
   el('items-body').appendChild(tr);
 }
 
-// Freight
+function addItemCard(it, idx){
+  const costoReal = it.costo_real_item || (it.neto_total + it.flete_item + it.iva_item + it.adicional_item);
+  const unidades = it.total_unidades || (it.cantidad * (it.unidades_por_display||1));
+  const pxu = it.costo_real_por_unidad || (unidades > 0 ? costoReal/unidades : 0);
+  const card = document.createElement('div');
+  card.className = 'item-card';
+  card.dataset.idx = idx;
+  card.innerHTML = `
+    <button class="item-del" onclick="this.closest('.item-card').remove()">✕</button>
+    <div class="item-card-header">
+      <div>
+        <div class="item-card-name">${esc(it.descripcion||'—')}</div>
+        <div class="item-card-code">Cód: ${esc(it.codigo||'—')} · ${it.cantidad} display${it.cantidad>1?'s':''} × ${it.unidades_por_display||1} u = ${unidades} unidades</div>
+      </div>
+      <div class="unit-price">
+        <div class="up-label">Precio/unidad</div>
+        <div class="up-value">$${Math.round(pxu).toLocaleString('es-CL')}</div>
+        <div class="up-sub">${unidades} unidades</div>
+      </div>
+    </div>
+    <div class="item-card-grid">
+      <div class="ic-mini"><div class="lbl">Neto total</div><div class="val">$${(it.neto_total||0).toLocaleString('es-CL')}</div></div>
+      <div class="ic-mini"><div class="lbl">Flete</div><div class="val">$${(it.flete_item||0).toLocaleString('es-CL')}</div></div>
+      <div class="ic-mini"><div class="lbl">IVA</div><div class="val">$${(it.iva_item||0).toLocaleString('es-CL')}</div></div>
+      <div class="ic-mini"><div class="lbl">Adicional/ILA</div><div class="val">$${(it.adicional_item||0).toLocaleString('es-CL')}</div></div>
+    </div>
+    <div style="margin-top:10px;background:var(--accent2);color:white;border-radius:6px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;font-family:'DM Mono',monospace;opacity:.8;">Costo real total</span>
+      <span style="font-size:16px;font-weight:800;font-family:'DM Mono',monospace;">$${Math.round(costoReal).toLocaleString('es-CL')}</span>
+    </div>
+    <input type="hidden" class="h-neto" value="${it.neto_total||0}">
+    <input type="hidden" class="h-flete" value="${it.flete_item||0}">
+    <input type="hidden" class="h-iva" value="${it.iva_item||0}">
+    <input type="hidden" class="h-adic" value="${it.adicional_item||0}">
+    <input type="hidden" class="h-cant" value="${it.cantidad||1}">
+    <input type="hidden" class="h-desc" value="${esc(it.descripcion||'')}">
+    <input type="hidden" class="h-tax" value="${it.tipo_impuesto||'iva'}">
+    <input type="hidden" class="h-real" value="${Math.round(costoReal)}">
+  `;
+  el('items-cards').appendChild(card);
+}
 function calcFreight(){
   const neto=parseFloat(el('fr-neto').value)||0;
   const iva=Math.round(neto*.19);
@@ -694,43 +763,69 @@ function getFactNeto(){
 
 // Costs
 function calcFinalCosts(){
+  const inlineFlete = el('freight-inline-notice').style.display !== 'none';
   const rows=[];
-  el('items-body').querySelectorAll('tr').forEach(tr=>{
-    const inputs=tr.querySelectorAll('input');
-    const nums=tr.querySelectorAll('input[type=number]');
-    const sel=tr.querySelector('select');
-    const desc=inputs[1]?.value||'';
-    const cant=parseFloat(nums[0]?.value)||0;
-    const neto=parseFloat(nums[1]?.value)||0;
-    const fleteItem=parseFloat(tr.querySelector('.h-flete')?.value)||0;
-    const ivaReal=parseFloat(tr.querySelector('.h-iva')?.value)||0;
-    const adicReal=parseFloat(tr.querySelector('.h-adic')?.value)||0;
-    if(!desc&&!neto) return;
-    rows.push({desc,cant,neto,fleteItem,ivaReal,adicReal,tax:TAXES[sel?.value||'iva'],taxKey:sel?.value||'iva'});
-  });
+
+  if(inlineFlete){
+    // Read from cards
+    el('items-cards').querySelectorAll('.item-card').forEach(card=>{
+      const desc = card.querySelector('.h-desc')?.value||'';
+      const cant = parseFloat(card.querySelector('.h-cant')?.value)||1;
+      const neto = parseFloat(card.querySelector('.h-neto')?.value)||0;
+      const flete = parseFloat(card.querySelector('.h-flete')?.value)||0;
+      const iva = parseFloat(card.querySelector('.h-iva')?.value)||0;
+      const adic = parseFloat(card.querySelector('.h-adic')?.value)||0;
+      const taxKey = card.querySelector('.h-tax')?.value||'iva';
+      const costReal = parseFloat(card.querySelector('.h-real')?.value)||0;
+      if(!desc&&!neto) return;
+      rows.push({desc,cant,neto,fShare:flete,iva,extra:adic,tax:TAXES[taxKey]||TAXES['iva'],taxKey,costReal,inlineFlete:true});
+    });
+  } else {
+    // Read from table rows
+    el('items-body').querySelectorAll('tr').forEach(tr=>{
+      const inputs=tr.querySelectorAll('input');
+      const nums=tr.querySelectorAll('input[type=number]');
+      const sel=tr.querySelector('select');
+      const desc=inputs[1]?.value||'';
+      const cant=parseFloat(nums[0]?.value)||0;
+      const neto=parseFloat(nums[1]?.value)||0;
+      const fleteItem=parseFloat(tr.querySelector('.h-flete')?.value)||0;
+      const ivaReal=parseFloat(tr.querySelector('.h-iva')?.value)||0;
+      const adicReal=parseFloat(tr.querySelector('.h-adic')?.value)||0;
+      if(!desc&&!neto) return;
+      rows.push({desc,cant,neto,fleteItem,ivaReal,adicReal,tax:TAXES[sel?.value||'iva'],taxKey:sel?.value||'iva'});
+    });
+  }
+
   if(!rows.length) return alert2('alert3','al-err','✗','No hay ítems para calcular.');
 
-  const inlineFlete = el('freight-inline-notice').style.display !== 'none';
-  const freightExternal = parseFloat(el('fr-total').value)||0;
-  const totalNeto = rows.reduce((s,r)=>s+r.neto,0);
-
-  finalCosts=rows.map(r=>{
-    const lineNeto=r.neto;
-    // Si tenemos IVA real de la factura (Coca Cola), usarlo. Si no, calcular.
-    const lineIVA = inlineFlete && r.ivaReal > 0 ? r.ivaReal : Math.round(lineNeto*r.tax.iva);
-    const lineExtra = inlineFlete && r.adicReal >= 0 ? r.adicReal : Math.round(lineNeto*r.tax.extra);
-    const fShare = inlineFlete
-      ? r.fleteItem
-      : (totalNeto>0 ? freightExternal*(lineNeto/totalNeto) : 0);
-    const costReal=lineNeto+lineIVA+lineExtra+fShare;
-    return{desc:r.desc,cant:r.cant,neto:lineNeto,iva:lineIVA,extra:lineExtra,
-           tax:r.tax,taxKey:r.taxKey,fShare,costReal,
-           costRealUnit:r.cant>0?costReal/r.cant:0,inlineFlete};
-  });
+  if(inlineFlete){
+    finalCosts = rows.map(r=>({
+      desc:r.desc, cant:r.cant, neto:r.neto,
+      iva:r.iva, extra:r.extra,
+      tax:r.tax, taxKey:r.taxKey,
+      fShare:r.fShare, costReal:r.costReal,
+      costRealUnit: r.cant>0 ? r.costReal/r.cant : 0,
+      inlineFlete:true
+    }));
+  } else {
+    const freightExternal = parseFloat(el('fr-total').value)||0;
+    const totalNeto = rows.reduce((s,r)=>s+r.neto,0);
+    finalCosts = rows.map(r=>{
+      const lineNeto=r.neto;
+      const lineIVA = r.ivaReal>0 ? r.ivaReal : Math.round(lineNeto*r.tax.iva);
+      const lineExtra = r.adicReal>=0 ? r.adicReal : Math.round(lineNeto*r.tax.extra);
+      const fShare = totalNeto>0 ? freightExternal*(lineNeto/totalNeto) : 0;
+      const costReal=lineNeto+lineIVA+lineExtra+fShare;
+      return{desc:r.desc,cant:r.cant,neto:lineNeto,iva:lineIVA,extra:lineExtra,
+             tax:r.tax,taxKey:r.taxKey,fShare,costReal,
+             costRealUnit:r.cant>0?costReal/r.cant:0,inlineFlete:false};
+    });
+  }
 
   const totalFlete = inlineFlete
     ? finalCosts.reduce((s,c)=>s+c.fShare,0)
-    : freightExternal;
+    : parseFloat(el('fr-total').value)||0;
 
   renderCosts(finalCosts, totalFlete);
   loadFudoCatalog();
