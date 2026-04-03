@@ -277,7 +277,16 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
     <div style="overflow-x:auto;">
       <table class="itbl">
         <thead><tr>
-          <th>Cód.</th><th>Descripción</th><th>Cant.</th><th>Neto Unit.</th><th>Flete/ítem</th><th>Impuesto</th><th>%</th><th></th>
+          <th>Cód.</th>
+          <th>Descripción</th>
+          <th>Cant.</th>
+          <th>Neto Total</th>
+          <th>Flete/ítem</th>
+          <th>IVA</th>
+          <th>Adicional</th>
+          <th>Impuesto</th>
+          <th>%</th>
+          <th></th>
         </tr></thead>
         <tbody id="items-body"></tbody>
       </table>
@@ -552,7 +561,6 @@ Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto e
 Campos no encontrados: usar "" o 0. SOLO el JSON.`;
 
   try{
-    // Convertir imagen a formato OpenAI
     const imageUrl = `data:${imgFile.type};base64,${imgB64}`;
     const res=await fetch('https://fudo-proxy.dulcitostalca.workers.dev/scan-invoice',{
       method:'POST',
@@ -572,6 +580,20 @@ Campos no encontrados: usar "" o 0. SOLO el JSON.`;
     const d=await res.json();
     const raw=d.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
     extracted=JSON.parse(raw);
+
+    // Validación para Coca Cola: si el flete de todos los ítems es 0, hay error de lectura
+    if(activePat==='coca_cola' && extracted.items){
+      const totalFlete = extracted.items.reduce((s,i)=>s+(i.flete_item||0),0);
+      const totalFleteFact = extracted.total_fletes || 0;
+      if(totalFlete===0 && totalFleteFact===0){
+        // GPT-4o no leyó el flete — marcar como error de lectura
+        alert2('alert1','al-warn','⚠','GPT-4o no leyó correctamente las columnas de flete. Los valores pueden estar incorrectos. Revisá manualmente antes de continuar.');
+      }
+      // Marcar flete como incluido en factura para Coca Cola
+      extracted.flete_incluido_en_factura = true;
+    }
+
+    console.log('FacturaScan JSON:', JSON.stringify(extracted, null, 2));
     fillStep2(extracted);
     goTo('step2',2);
   }catch(e){
@@ -629,15 +651,15 @@ function addItemRow(it={}){
   const unitInfo = unidadesDisplay > 1 ? ` <span style="font-size:9px;color:var(--accent3);font-family:'DM Mono',monospace;">[×${unidadesDisplay}u → $${Math.round(costoUnit).toLocaleString('es-CL')}/u]</span>` : '';
   tr.innerHTML=`
     <td><input type="text" value="${esc(it.codigo||'')}" style="width:55px;font-size:11px;" placeholder="—"></td>
-    <td><input type="text" value="${esc(it.descripcion||'')}" placeholder="Producto..." style="min-width:120px;">${unitInfo}</td>
+    <td><input type="text" value="${esc(it.descripcion||'')}" placeholder="Producto..." style="min-width:140px;">${unitInfo}</td>
     <td><input type="number" value="${it.cantidad||1}" style="width:48px;" min="0.01" step="0.01"></td>
     <td><input type="number" value="${netoTotal||''}" placeholder="0" style="width:80px;" step="1" title="Neto Total de la factura" oninput="calcFreight()"></td>
-    <td><input type="number" value="${it.flete_item||0}" placeholder="0" style="width:70px;" step="1" title="Flete Total por ítem"></td>
+    <td><input type="number" value="${it.flete_item||0}" placeholder="0" style="width:70px;" step="1" title="Flete Total por ítem" class="h-flete"></td>
+    <td><input type="number" value="${ivaItem||''}" placeholder="0" style="width:70px;" step="1" title="IVA por ítem" class="h-iva"></td>
+    <td><input type="number" value="${adicionalItem||''}" placeholder="0" style="width:70px;" step="1" title="Adicional/ILA por ítem" class="h-adic"></td>
     <td><select style="font-size:11px;min-width:120px;">${opts}</select></td>
     <td class="tpct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">—</td>
-    <td><button class="del-btn" onclick="this.closest('tr').remove();calcFreight()">✕</button></td>
-    <input type="hidden" class="h-iva" value="${ivaItem}">
-    <input type="hidden" class="h-adic" value="${adicionalItem}">`;
+    <td><button class="del-btn" onclick="this.closest('tr').remove();calcFreight()">✕</button></td>`;
   const sel=tr.querySelector('select');
   const pctTd=tr.querySelector('.tpct');
   const upd=()=>{const t=TAXES[sel.value];pctTd.textContent=t.iva===0?'0%':Math.round((t.iva+t.extra)*100)+'%';};
@@ -679,9 +701,8 @@ function calcFinalCosts(){
     const sel=tr.querySelector('select');
     const desc=inputs[1]?.value||'';
     const cant=parseFloat(nums[0]?.value)||0;
-    const neto=parseFloat(nums[1]?.value)||0; // neto_total de la factura
-    const fleteItem=parseFloat(nums[2]?.value)||0; // flete_total por ítem
-    // Usar IVA y adicional reales de la factura si están disponibles
+    const neto=parseFloat(nums[1]?.value)||0;
+    const fleteItem=parseFloat(tr.querySelector('.h-flete')?.value)||0;
     const ivaReal=parseFloat(tr.querySelector('.h-iva')?.value)||0;
     const adicReal=parseFloat(tr.querySelector('.h-adic')?.value)||0;
     if(!desc&&!neto) return;
