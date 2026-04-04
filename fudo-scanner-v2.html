@@ -1343,30 +1343,31 @@ async function sendToFudo(){
     };
     ops.push({ op: 'add', data: expenseData });
 
-    // 2. Add expense items with matching
+    // 2. Add expense items — one op per item (not bulk)
     if(merchItems.length > 0){
-      const bulkItems = merchItems
-        .filter(m => m.cantidad > 0)
-        .map(m => ({
-          type: 'ExpenseItem',
-          attributes: {
-            price: m.costoTotal,
-            quantity: m.cantidad,
-            detail: m.desc,
-          },
-          relationships: {
-            expense: { data: { type: 'Expense', lid: '1' } },
-            product: m.fudoType === 'Product'
-              ? { data: { type: 'Product', id: m.fudoId } }
-              : { data: null },
-            ingredient: m.fudoType === 'Ingredient'
-              ? { data: { type: 'Ingredient', id: m.fudoId } }
-              : { data: null },
+      merchItems.filter(m => m.cantidad > 0).forEach(m => {
+        const itemOp = {
+          op: 'add',
+          data: {
+            type: 'ExpenseItem',
+            attributes: {
+              price: m.costoTotal,
+              quantity: m.cantidad,
+              detail: m.desc,
+            },
+            relationships: {
+              expense: { data: { type: 'Expense', lid: '1' } },
+            }
           }
-        }));
-      if(bulkItems.length > 0){
-        ops.push({ op: 'add', 'bulk:data': bulkItems });
-      }
+        };
+        // Solo agregar product o ingredient si hay matching — nunca null
+        if(m.fudoType === 'Product' && m.fudoId){
+          itemOp.data.relationships.product = { data: { type: 'Product', id: String(m.fudoId) } };
+        } else if(m.fudoType === 'Ingredient' && m.fudoId){
+          itemOp.data.relationships.ingredient = { data: { type: 'Ingredient', id: String(m.fudoId) } };
+        }
+        ops.push(itemOp);
+      });
     }
 
     // 3. Add payment if not pending
