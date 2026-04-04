@@ -398,29 +398,43 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
         </select>
       </div>
       <div class="field">
+        <label>Comentario</label>
+        <input type="text" id="fudo-comment" placeholder="Ej: factura semanal, productos varios...">
+      </div>
+    </div>
+    <hr style="margin:12px 0;">
+    <div class="ctitle">💳 Pago</div>
+    <div class="frow">
+      <div class="field">
+        <label>Estado</label>
+        <select id="fudo-status" onchange="togglePayment()">
+          <option value="paid" selected>✓ Pagado completo</option>
+          <option value="partial">⏳ Abono parcial</option>
+          <option value="pending">⏸ Sin registrar pago</option>
+        </select>
+      </div>
+      <div class="field" id="pm-field">
         <label>Medio de pago</label>
         <select id="fudo-pm">
           <option value="">Seleccionar medio...</option>
         </select>
       </div>
     </div>
-    <div class="frow one">
+    <div class="frow" id="payment-amount-row" style="display:none;">
       <div class="field">
-        <label>Comentario</label>
-        <input type="text" id="fudo-comment" placeholder="Ej: factura semanal, compra especial...">
-      </div>
-    </div>
-    <div class="frow">
-      <div class="field">
-        <label>Estado del pago</label>
-        <select id="fudo-status">
-          <option value="pending">⏳ Pendiente</option>
-          <option value="paid" selected>✓ Pagado</option>
-        </select>
+        <label>Monto del abono ($)</label>
+        <input type="number" id="fudo-payamount" placeholder="0" min="1">
+        <div class="hint">El resto quedará pendiente de pago en FUDO</div>
       </div>
       <div class="field">
         <label>Fecha de pago</label>
         <input type="date" id="fudo-paydate">
+      </div>
+    </div>
+    <div class="frow one" id="payment-date-row">
+      <div class="field">
+        <label>Fecha de pago</label>
+        <input type="date" id="fudo-paydate2">
       </div>
     </div>
   </div>
@@ -1092,11 +1106,29 @@ function updateMerchUnit(i, val){
   if(merchItems[i]) merchItems[i].unidad = val;
 }
 
-// ── Load FUDO catalog from localStorage (shared with fudo-conectar) ──
+function togglePayment(){
+  const status = el('fudo-status')?.value;
+  const pmField = el('pm-field');
+  const amountRow = el('payment-amount-row');
+  const dateRow = el('payment-date-row');
+  if(status === 'pending'){
+    if(pmField) pmField.style.display='none';
+    if(amountRow) amountRow.style.display='none';
+    if(dateRow) dateRow.style.display='none';
+  } else if(status === 'partial'){
+    if(pmField) pmField.style.display='';
+    if(amountRow) amountRow.style.display='';
+    if(dateRow) dateRow.style.display='none';
+  } else {
+    if(pmField) pmField.style.display='';
+    if(amountRow) amountRow.style.display='none';
+    if(dateRow) dateRow.style.display='';
+  }
+}
 function loadFudoCatalog(){
   try {
     const cats = JSON.parse(localStorage.getItem('fd_cats')||'[]');
-    const pms  = JSON.parse(localStorage.getItem('fd_pms')||'[]').filter(p=>p.attributes?.forExpenses);
+    const pms  = JSON.parse(localStorage.getItem('fd_pms')||'[]').filter(p=>p.attributes?.active);
     const catSel = el('fudo-cat');
     const pmSel  = el('fudo-pm');
     if(cats.length){
@@ -1110,7 +1142,10 @@ function loadFudoCatalog(){
         pms.map(p=>`<option value="${p.id}">${esc(p.attributes?.name||p.id)}</option>`).join('');
     }
     // Set today as payment date
-    el('fudo-paydate').value = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    if(el('fudo-paydate'))  el('fudo-paydate').value  = today;
+    if(el('fudo-paydate2')) el('fudo-paydate2').value = today;
+    togglePayment();
   } catch(e){}
 }
 
@@ -1140,7 +1175,7 @@ async function sendToFudo(){
   const pmId   = el('fudo-pm')?.value;
   const status = el('fudo-status')?.value || 'paid';
   if(!catId) return alert2('alert3','al-err','✗','Elegí una categoría de gasto.');
-  if(status==='paid' && !pmId) return alert2('alert3','al-err','✗','Elegí un medio de pago.');
+  if(status !== 'pending' && !pmId) return alert2('alert3','al-err','✗','Elegí un medio de pago.');
 
   goTo('step-send',null);
 
@@ -1149,9 +1184,12 @@ async function sendToFudo(){
     const PROXY   = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
     const API     = 'https://api.fu.do/v1alpha1';
     const today   = new Date().toISOString().split('T')[0];
-    const paydate = el('fudo-paydate')?.value || today;
+    const paydate = el('fudo-paydate2')?.value || el('fudo-paydate')?.value || today;
     const comment = v('fudo-comment') || ('FacturaScan · ' + v('f-prov') + ' · ' + v('f-num'));
     const totalReal = Math.round(finalCosts.reduce((s,c)=>s+c.costReal,0));
+    const payAmount = status === 'partial'
+      ? Math.round(parseFloat(el('fudo-payamount')?.value)||0)
+      : totalReal;
 
     // Parse date from DD/MM/YYYY to YYYY-MM-DD
     const rawDate = v('f-fecha');
@@ -1209,14 +1247,14 @@ async function sendToFudo(){
       }
     }
 
-    // 3. Add payment if paid
-    if(status === 'paid' && pmId){
+    // 3. Add payment if not pending
+    if(status !== 'pending' && pmId && payAmount > 0){
       ops.push({
         op: 'add',
         data: {
           type: 'Payment',
           attributes: {
-            amount: totalReal,
+            amount: payAmount,
             paidAt: paydate,
           },
           relationships: {
