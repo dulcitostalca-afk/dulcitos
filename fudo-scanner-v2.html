@@ -1029,6 +1029,20 @@ function calcFinalCosts(){
 
   renderCosts(finalCosts, totalFlete);
   loadFudoCatalog();
+  // Limpiar matches que fueron guardados por auto-SKU erróneo (resetear para que recalcule)
+  finalCosts.forEach(c => {
+    const matchKey = 'match_' + (selectedProvId||'0') + '_' + c.desc.trim().toLowerCase().replace(/\s+/g,'_');
+    const existing = S.g(matchKey);
+    // Si el match guardado no tiene el código correcto en el nombre, borrarlo para que el nuevo auto-match lo recalcule
+    if (existing && c.codigo) {
+      const codigoNum = parseInt(String(c.codigo).trim(), 10); // 0125 → 125
+      const skuMatch = (existing.name || '').match(/sku:\s*(\d+)/i);
+      if (skuMatch && parseInt(skuMatch[1], 10) !== codigoNum) {
+        S.s(matchKey, null); // borrar match incorrecto
+        localStorage.removeItem('cleared_' + matchKey); // permitir que auto-match lo corrija
+      }
+    }
+  });
   goTo('step3',3);
 }
 
@@ -1070,14 +1084,22 @@ function buildMerchDetail(costs){
     let savedMatch = S.g(matchKey);
 
     // Auto-match por SKU: si no hay match guardado y tenemos código, buscamos "SKU: CODIGO" en el catálogo
-    if (!savedMatch && c.codigo) {
+    // Solo corre si el match no fue borrado manualmente (clearMatch guarda null explícitamente)
+    const matchCleared = localStorage.getItem('cleared_' + matchKey) === '1';
+    if (!savedMatch && !matchCleared && c.codigo) {
       try {
         const catalog = JSON.parse(localStorage.getItem('fs_catalog') || '[]');
-        const skuSearch = 'sku: ' + String(c.codigo).replace(/^0+/, ''); // quita ceros a la izquierda
-        const found = catalog.find(p => (p.nombre || '').toLowerCase().includes(skuSearch));
+        const codigoStr = String(c.codigo).trim();
+        // Buscar "SKU: 1966" — coincidencia exacta del número, con o sin ceros a la izquierda
+        const codigoNum = parseInt(String(c.codigo).trim(), 10); // 0125 → 125, 1966 → 1966
+        const found = catalog.find(p => {
+          const skuMatch = (p.nombre || '').match(/sku:\s*(\d+)/i);
+          if (!skuMatch) return false;
+          return parseInt(skuMatch[1], 10) === codigoNum; // 0125 == 125 ✓
+        });
         if (found) {
           savedMatch = { id: found.id, type: 'Product', name: found.nombre };
-          S.s(matchKey, savedMatch); // guardar para próxima vez
+          S.s(matchKey, savedMatch);
         }
       } catch(e) {}
     }
@@ -1216,6 +1238,7 @@ function searchFudoItem(idx, query, matchKey){
 function saveMatch(idx, matchKey, fudoId, fudoType, fudoName){
   // Save to localStorage
   S.s(matchKey, { id: fudoId, type: fudoType, name: fudoName });
+  localStorage.removeItem('cleared_' + matchKey); // ya no está borrado manualmente
   // Update merchItems
   if(merchItems[idx]){
     merchItems[idx].fudoId   = fudoId;
@@ -1237,6 +1260,7 @@ function saveMatch(idx, matchKey, fudoId, fudoType, fudoName){
 
 function clearMatch(matchKey, idx){
   S.s(matchKey, null);
+  localStorage.setItem('cleared_' + matchKey, '1'); // marcar como borrado manualmente
   if(merchItems[idx]){ merchItems[idx].fudoId=null; merchItems[idx].fudoType=null; merchItems[idx].fudoName=null; }
   // Rebuild merch detail
   buildMerchDetail(finalCosts);
