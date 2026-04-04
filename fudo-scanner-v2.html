@@ -201,14 +201,17 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 <div class="app">
 
 <header>
-  <div class="logo">
+  <div class="logo" onclick="goHome()" style="cursor:pointer;" title="Volver al inicio">
     <div class="logo-mark">🧾</div>
     <div class="logo-text">
       <h1>FacturaScan</h1>
       <span>para FUDO · Chile</span>
     </div>
   </div>
-  <div class="vbadge">v2.0</div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button onclick="goHome()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--text-dim);">🏠 Inicio</button>
+    <div class="vbadge">v2.0</div>
+  </div>
 </header>
 
 <div class="prog">
@@ -1392,8 +1395,8 @@ async function sendToFudo(){
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Content-Type': 'application/vnd.api+json;ext="https://jsonapi.org/ext/atomic"',
+        'Accept': 'application/vnd.api+json;ext="https://jsonapi.org/ext/atomic"',
       },
       body: JSON.stringify({ 'atomic:operations': ops })
     });
@@ -1436,8 +1439,11 @@ function showSuccess(ok,payload,extra){
   }
 }
 
-// Nav
-const SECS=['step1','step-scan','step2','step3','step-send','step4'];
+function goHome(){
+  if(confirm('¿Volver al inicio? Se perderán los datos no guardados.')){
+    window.location.href = 'index.html';
+  }
+}['step1','step-scan','step2','step3','step-send','step4'];
 function goTo(id,step){
   SECS.forEach(s=>{const e=el(s);if(e)e.className='section'+(s===id?' active':'');});
   if(step){[1,2,3,4].forEach(i=>{
