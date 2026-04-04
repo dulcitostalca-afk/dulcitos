@@ -1443,7 +1443,9 @@ function goHome(){
   if(confirm('¿Volver al inicio? Se perderán los datos no guardados.')){
     window.location.href = 'index.html';
   }
-}['step1','step-scan','step2','step3','step-send','step4'];
+}
+
+const SECS=['step1','step-scan','step2','step3','step-send','step4'];
 function goTo(id,step){
   SECS.forEach(s=>{const e=el(s);if(e)e.className='section'+(s===id?' active':'');});
   if(step){[1,2,3,4].forEach(i=>{
