@@ -1059,6 +1059,10 @@ function buildMerchDetail(costs){
     const unidPorDisplay = matchX ? parseInt(matchX[1]) : 1;
     const totalUnidades = Math.round(c.cant * unidPorDisplay * 100) / 100;
 
+    // Check if we have a saved match for this item
+    const matchKey = 'match_' + (selectedProvId||'0') + '_' + c.desc.trim().toLowerCase().replace(/\s+/g,'_');
+    const savedMatch = S.g(matchKey);
+
     const item = {
       idx: i,
       desc: c.desc,
@@ -1067,31 +1071,51 @@ function buildMerchDetail(costs){
       costoTotal: Math.round(c.costReal),
       cantDisplay: c.cant,
       unidPorDisplay,
+      fudoId: savedMatch?.id || null,
+      fudoType: savedMatch?.type || null,
+      fudoName: savedMatch?.name || null,
     };
     merchItems.push(item);
 
     const div = document.createElement('div');
-    div.style.cssText = 'display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--surface2);';
+    div.style.cssText = 'padding:10px 8px;border-bottom:1px solid var(--surface2);';
+
+    // Matching status
+    const matchHtml = savedMatch
+      ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
+          <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;">
+            ✓ ${esc(savedMatch.name)}
+          </span>
+          <button onclick="clearMatch('${matchKey}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:10px;text-decoration:underline;">cambiar</button>
+        </div>`
+      : `<div style="margin-top:6px;">
+          <input type="text" id="match-search-${i}" placeholder="Buscar en FUDO... (opcional)"
+            oninput="searchFudoItem(${i},this.value,'${matchKey}')"
+            style="width:100%;padding:5px 10px;font-size:12px;border:1px dashed var(--border);border-radius:4px;background:var(--surface2);">
+          <div id="match-list-${i}" style="display:none;border:1px solid var(--border);border-radius:4px;max-height:150px;overflow-y:auto;background:white;margin-top:2px;"></div>
+        </div>`;
+
     div.innerHTML = `
-      <div style="display:flex;align-items:center;gap:4px;">
-        <input type="number" id="merch-cant-${i}" value="${totalUnidades}" min="0.001" step="0.001"
-          style="width:56px;text-align:center;padding:5px 6px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid #e85d3a;border-radius:6px;background:var(--surface2);"
-          oninput="updateMerch(${i},this.value)">
-      </div>
-      <div>
-        <div style="font-weight:600;font-size:13px;font-family:'DM Sans',sans-serif;">${esc(c.desc)}</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+      <div style="display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:start;">
+        <div>
+          <input type="number" id="merch-cant-${i}" value="${totalUnidades}" min="0.001" step="0.001"
+            style="width:56px;text-align:center;padding:5px 6px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid #e85d3a;border-radius:6px;background:var(--surface2);"
+            oninput="updateMerch(${i},this.value)">
           <select id="merch-unit-${i}"
-            style="padding:3px 6px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);font-family:'DM Mono',monospace;color:var(--text-muted);"
+            style="width:56px;padding:3px 4px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);margin-top:3px;"
             onchange="updateMerchUnit(${i},this.value)">
             <option value="unid." selected>unid.</option>
             <option value="kg">kg</option>
             <option value="L">L</option>
           </select>
-          <span style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;">${c.cant} display${c.cant>1?'s':''} × ${unidPorDisplay}u</span>
         </div>
+        <div>
+          <div style="font-weight:600;font-size:13px;font-family:'DM Sans',sans-serif;">${esc(c.desc)}</div>
+          <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;">${c.cant} display${c.cant>1?'s':''} × ${unidPorDisplay}u</div>
+          ${matchHtml}
+        </div>
+        <div style="text-align:right;font-weight:700;font-size:14px;font-family:'DM Mono',monospace;color:var(--accent);white-space:nowrap;">${peso(c.costReal)}</div>
       </div>
-      <div style="text-align:right;font-weight:700;font-size:14px;font-family:'DM Mono',monospace;color:var(--accent);">${peso(c.costReal)}</div>
     `;
     body.appendChild(div);
   });
@@ -1113,6 +1137,90 @@ function updateMerch(i, val){
 
 function updateMerchUnit(i, val){
   if(merchItems[i]) merchItems[i].unidad = val;
+}
+
+// ── Matching helpers ──────────────────────────────────────
+const S = {
+  g: (k,d) => { try{const v=localStorage.getItem('fs_'+k);return v!=null?JSON.parse(v):(d??null);}catch{return d??null;} },
+  s: (k,v) => { try{localStorage.setItem('fs_'+k,JSON.stringify(v));}catch{} },
+};
+
+function searchFudoItem(idx, query, matchKey){
+  const list = el('match-list-'+idx);
+  if(!query.trim()){ list.style.display='none'; return; }
+
+  // Leer catálogo desde localStorage (guardado por fudo-matching.html)
+  let catalog = [];
+  try { catalog = JSON.parse(localStorage.getItem('fs_catalog')||'[]'); } catch(e){}
+
+  if(!catalog.length){
+    list.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--text-muted);">
+      ⚠ Catálogo no disponible. Abrí <strong>fudo-matching.html</strong> una vez para cargarlo.
+    </div>`;
+    list.style.display='block';
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const matchProds = catalog.filter(i=>i.tipo==='producto' && (i.nombre||'').toLowerCase().includes(q)).slice(0,5);
+  const matchIngs  = catalog.filter(i=>i.tipo==='ingrediente' && (i.nombre||'').toLowerCase().includes(q)).slice(0,5);
+
+  if(!matchProds.length && !matchIngs.length){
+    list.innerHTML=`<div style="padding:8px 12px;font-size:12px;color:var(--text-muted);">Sin resultados — podés continuar sin asignar</div>`;
+    list.style.display='block';
+    return;
+  }
+
+  list.style.display='block';
+  let html = '';
+  if(matchProds.length){
+    html += `<div style="padding:4px 10px;font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;background:var(--surface2);">PRODUCTOS</div>`;
+    html += matchProds.map(p=>`
+      <div onclick="saveMatch(${idx},'${matchKey}','${p.id}','Product','${esc(p.nombre||'')}')"
+        style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--surface2);"
+        onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
+        ${esc(p.nombre||'—')} <span style="font-size:10px;color:var(--text-muted);">(u.)</span>
+      </div>`).join('');
+  }
+  if(matchIngs.length){
+    html += `<div style="padding:4px 10px;font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;background:var(--surface2);">INGREDIENTES</div>`;
+    html += matchIngs.map(p=>`
+      <div onclick="saveMatch(${idx},'${matchKey}','${p.id}','Ingredient','${esc(p.nombre||'')}')"
+        style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--surface2);"
+        onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
+        ${esc(p.nombre||'—')} <span style="font-size:10px;color:var(--text-muted);">(${p.unidad||'kg'})</span>
+      </div>`).join('');
+  }
+  list.innerHTML = html;
+}
+
+function saveMatch(idx, matchKey, fudoId, fudoType, fudoName){
+  // Save to localStorage
+  S.s(matchKey, { id: fudoId, type: fudoType, name: fudoName });
+  // Update merchItems
+  if(merchItems[idx]){
+    merchItems[idx].fudoId   = fudoId;
+    merchItems[idx].fudoType = fudoType;
+    merchItems[idx].fudoName = fudoName;
+  }
+  // Update UI — replace search with confirmed badge
+  const searchDiv = el('match-search-'+idx)?.parentElement;
+  if(searchDiv){
+    searchDiv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;">
+          ✓ ${esc(fudoName)}
+        </span>
+        <button onclick="clearMatch('${matchKey}',${idx})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:10px;text-decoration:underline;">cambiar</button>
+      </div>`;
+  }
+}
+
+function clearMatch(matchKey, idx){
+  S.s(matchKey, null);
+  if(merchItems[idx]){ merchItems[idx].fudoId=null; merchItems[idx].fudoType=null; merchItems[idx].fudoName=null; }
+  // Rebuild merch detail
+  buildMerchDetail(finalCosts);
 }
 
 function togglePayment(){
@@ -1235,7 +1343,7 @@ async function sendToFudo(){
     };
     ops.push({ op: 'add', data: expenseData });
 
-    // 2. Add expense items (merchandise detail)
+    // 2. Add expense items with matching
     if(merchItems.length > 0){
       const bulkItems = merchItems
         .filter(m => m.cantidad > 0)
@@ -1248,9 +1356,12 @@ async function sendToFudo(){
           },
           relationships: {
             expense: { data: { type: 'Expense', lid: '1' } },
-            // Solo ingredient por ahora — se mejorará con matching
-            ingredient: { data: null },
-            product: { data: null },
+            product: m.fudoType === 'Product'
+              ? { data: { type: 'Product', id: m.fudoId } }
+              : { data: null },
+            ingredient: m.fudoType === 'Ingredient'
+              ? { data: { type: 'Ingredient', id: m.fudoId } }
+              : { data: null },
           }
         }));
       if(bulkItems.length > 0){

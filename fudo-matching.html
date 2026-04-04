@@ -221,12 +221,14 @@ const BY_CODE = {};
 const BY_NAME_LOWER = {};
 FUDO_CATALOG.forEach(item => {
   if (item.codigo) {
-    // Normalize: remove prefix like "6pack", lowercase, strip spaces
     const rawCode = item.codigo.toLowerCase().replace(/[^0-9]/g, '');
     if (rawCode.length >= 8) BY_CODE[rawCode] = item;
   }
   BY_NAME_LOWER[item.nombre.toLowerCase().trim()] = item;
 });
+
+// Guardar catálogo en localStorage para que FacturaScan lo use
+try { localStorage.setItem('fs_catalog', JSON.stringify(FUDO_CATALOG)); } catch(e) {}
 
 // Load learned mappings from localStorage
 function getLearnedMappings() {
