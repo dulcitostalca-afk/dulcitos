@@ -234,16 +234,22 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 
   <div class="card">
     <div class="cheader">
-      <div class="ctitle">🏭 Patrón de proveedor</div>
-      <span class="hint">mejora la precisión de lectura</span>
+      <div class="ctitle">🏢 ¿De qué proveedor es esta factura?</div>
+      <span class="hint" style="color:var(--accent2);">obligatorio</span>
     </div>
-    <div class="pattern-selector">
-      <div class="pchip active" data-pat="generic" onclick="selPat(this)">📄 Genérico</div>
-      <div class="pchip" data-pat="coca_cola" onclick="selPat(this)">🥤 Coca Cola Embonor</div>
-      <div class="pchip" data-pat="harina" onclick="selPat(this)">🌾 Proveedor Harina</div>
-      <div class="pchip" data-pat="alcohol" onclick="selPat(this)">🍷 Bebidas Alcohólicas</div>
+    <div class="field">
+      <input type="text" id="prov-search" placeholder="Escribí el nombre del proveedor..."
+        oninput="filterProviders(this.value)"
+        autocomplete="off">
     </div>
-    <div class="hint" id="pat-desc" style="color:var(--text-dim);">Sin patrón específico — la IA detecta el formato automáticamente.</div>
+    <div id="prov-list" style="margin-top:8px;max-height:200px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--radius-sm);display:none;"></div>
+    <div id="prov-selected" style="display:none;margin-top:8px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-weight:700;font-size:14px;" id="prov-sel-name">—</div>
+        <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;" id="prov-sel-pat">Patrón: genérico</div>
+      </div>
+      <button onclick="clearProvider()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;">✕</button>
+    </div>
   </div>
 
   <div class="card">
@@ -266,7 +272,7 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
     <div class="card">
       <div class="ctitle">👁 Vista previa</div>
       <div class="prev-wrap"><img id="prev-img" src="" alt=""><span class="prev-chip" id="prev-name"></span></div>
-      <button class="btn btn-p btn-full" onclick="startScan()">🔍 Escanear con IA</button>
+      <button class="btn btn-p btn-full" id="btn-scan" onclick="checkAndScan()">🔍 Escanear con IA</button>
     </div>
   </div>
 </div>
@@ -359,25 +365,6 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 <!-- STEP 3: Costs -->
 <div class="section" id="step3">
   <div id="alert3"></div>
-  <div class="card">
-    <div class="cheader">
-      <div class="ctitle">💰 Costo real por ítem <span class="calc-tag">CALCULADO</span></div>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="ctbl">
-        <thead><tr>
-          <th>Producto</th><th>Cant.</th><th>Neto</th><th>Impuestos</th><th>Flete</th><th>Costo real total</th>
-        </tr></thead>
-        <tbody id="cost-body"></tbody>
-      </table>
-    </div>
-    <div class="totstrip">
-      <div class="ti"><div class="tl">Neto fact.</div><div class="tv" id="t-neto">$0</div></div>
-      <div class="ti"><div class="tl">Impuestos</div><div class="tv" id="t-imp">$0</div></div>
-      <div class="ti"><div class="tl">Flete total</div><div class="tv" id="t-flete">$0</div></div>
-      <div class="ti"><div class="tl">Costo real</div><div class="tv hi" id="t-real">$0</div></div>
-    </div>
-  </div>
 
   <!-- Detalle de mercadería para FUDO -->
   <div class="card">
@@ -472,6 +459,58 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
 
 <script>
 let imgFile=null,imgB64=null,activePat='generic',extracted={},finalCosts=[];
+
+// ── Provider patterns map ─────────────────────────────────
+const PROV_PATTERNS = {
+  '3':  'coca_cola',  // Coca Cola Embonor
+  '10': 'harina',     // Molino Linderos
+  '4':  'harina',     // Central Mayorista
+};
+
+let selectedProvId = null;
+let selectedProvName = null;
+
+function filterProviders(query){
+  const list = el('prov-list');
+  if(!query.trim()){ list.style.display='none'; return; }
+  const provs = JSON.parse(localStorage.getItem('fd_provs')||'[]');
+  const q = query.toLowerCase();
+  const matches = provs.filter(p=>p.attributes?.name?.toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length){ list.style.display='none'; return; }
+  list.style.display='block';
+  list.innerHTML=matches.map(p=>`
+    <div onclick="selectProvider('${p.id}','${esc(p.attributes?.name||'')}')"
+      style="padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:1px solid var(--surface2);"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      ${esc(p.attributes?.name||'—')}
+      ${PROV_PATTERNS[p.id]?`<span style="font-size:10px;color:#e85d3a;font-family:'DM Mono',monospace;margin-left:6px;">★ patrón especial</span>`:''}
+    </div>`).join('');
+}
+
+function selectProvider(id, name){
+  selectedProvId = id;
+  selectedProvName = name;
+  activePat = PROV_PATTERNS[id] || 'generic';
+  el('prov-search').value='';
+  el('prov-list').style.display='none';
+  const selDiv = el('prov-selected');
+  selDiv.style.display='flex';
+  el('prov-sel-name').textContent=name;
+  const patLabels={coca_cola:'🥤 Patrón Coca Cola',harina:'🌾 Patrón Harina de Trigo',generic:'📄 Patrón genérico'};
+  el('prov-sel-pat').textContent=patLabels[activePat]||'📄 Patrón genérico';
+}
+
+function clearProvider(){
+  selectedProvId=null; selectedProvName=null; activePat='generic';
+  el('prov-search').value='';
+  el('prov-selected').style.display='none';
+}
+
+function checkAndScan(){
+  if(!selectedProvId) return alert2('alert1','al-err','✗','Elegí el proveedor antes de escanear.');
+  if(!imgB64) return alert2('alert1','al-err','✗','Subí la foto de la factura primero.');
+  startScan();
+}
 
 const PATTERNS={
   generic:  {desc:'Sin patrón — la IA detecta el formato automáticamente.',defTax:'iva'},
@@ -649,24 +688,8 @@ async function startScan(){
     // Primer escaneo con patrón actual (puede ser generic)
     extracted = await callScanAPI(imageUrl, activePat);
 
-    // Auto-detectar proveedor y re-escanear si corresponde
-    const provNorm = (extracted.proveedor||'').toLowerCase();
-    let detectedPat = 'generic';
-    if(provNorm.includes('coca cola') || provNorm.includes('embonor')) detectedPat = 'coca_cola';
-    else if(provNorm.includes('molino') || provNorm.includes('harina')) detectedPat = 'harina';
-    else if(provNorm.includes('ccu') || provNorm.includes('pepsi')) detectedPat = 'alcohol';
-
-    console.log('Proveedor detectado:', extracted.proveedor, '→ patrón:', detectedPat, '| patrón activo:', activePat);
-
-    if(detectedPat !== 'generic' && detectedPat !== activePat){
-      activePat = detectedPat;
-      el('scan-msg').textContent = '✓ ' + extracted.proveedor + ' — re-escaneando con patrón correcto...';
-      console.log('Re-escaneando con patrón:', activePat);
-      extracted = await callScanAPI(imageUrl, activePat);
-      console.log('Re-scan JSON:', JSON.stringify(extracted, null, 2));
-    }
-
-    // Forzar flete incluido para Coca Cola
+    // Proveedor ya seleccionado — no necesita re-detección
+    // Solo forzar flete incluido para Coca Cola
     if(activePat === 'coca_cola') extracted.flete_incluido_en_factura = true;
 
     clearInterval(iv);
@@ -1136,6 +1159,11 @@ function loadFudoCatalog(){
         cats.map(c=>`<option value="${c.id}">${esc(c.attributes?.name||c.id)}</option>`).join('');
       // Default: Minimarket (id 1) para Coca Cola
       if(activePat==='coca_cola') catSel.value='1';
+      // Pre-seleccionar categoría según proveedor conocido
+      if(selectedProvId === '10' || selectedProvId === '4') {
+        // Molino Linderos o Central Mayorista → CV: Materia Prima (id 2)
+        catSel.value='2';
+      }
     }
     if(pms.length){
       pmSel.innerHTML = '<option value="">Elegir medio de pago...</option>' +
@@ -1197,11 +1225,8 @@ async function sendToFudo(){
       ? rawDate.split('/').reverse().join('-')
       : today;
 
-    // Find provider ID from catalog
-    const provs = JSON.parse(localStorage.getItem('fd_provs')||'[]');
-    const provName = v('f-prov').toLowerCase();
-    const provMatch = provs.find(p => p.attributes?.name?.toLowerCase().includes(provName) || provName.includes(p.attributes?.name?.toLowerCase()));
-    const provId = provMatch?.id || null;
+    // Use selected provider ID directly
+    const provId = selectedProvId || null;
 
     // Build atomic operations
     const ops = [];
