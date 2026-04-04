@@ -378,6 +378,16 @@ pre.jdump{background:var(--accent);color:#7fffb8;border-radius:var(--radius-sm);
       <div class="ti"><div class="tl">Costo real</div><div class="tv hi" id="t-real">$0</div></div>
     </div>
   </div>
+
+  <!-- Detalle de mercadería para FUDO -->
+  <div class="card">
+    <div class="cheader">
+      <div class="ctitle">🛒 Detalle de mercadería → FUDO</div>
+      <div class="hint">Verificá cantidades antes de cargar</div>
+    </div>
+    <div id="merch-body"></div>
+  </div>
+
   <div class="card">
     <div class="ctitle">📋 Datos del gasto en FUDO</div>
     <div class="frow">
@@ -1001,6 +1011,85 @@ function renderCosts(costs,freight){
   tbody.appendChild(tfoot);
   el('t-neto').textContent=peso(sN);el('t-imp').textContent=peso(sI);
   el('t-flete').textContent=peso(freight);el('t-real').textContent=peso(sR);
+
+  // Construir detalle de mercadería
+  buildMerchDetail(costs);
+}
+
+// merchandise items stored for sendToFudo
+let merchItems = [];
+
+function buildMerchDetail(costs){
+  merchItems = [];
+  const body = el('merch-body');
+  body.innerHTML = '';
+
+  // Header
+  body.innerHTML = `<div style="display:grid;grid-template-columns:60px 1fr auto;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:4px;">
+    <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;">CANT.</div>
+    <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;">PRODUCTO</div>
+    <div style="font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;text-align:right;">COSTO TOTAL</div>
+  </div>`;
+
+  costs.forEach((c, i) => {
+    const matchX = c.desc.match(/X0?(\d+)/i);
+    const unidPorDisplay = matchX ? parseInt(matchX[1]) : 1;
+    const totalUnidades = Math.round(c.cant * unidPorDisplay * 100) / 100;
+
+    const item = {
+      idx: i,
+      desc: c.desc,
+      cantidad: totalUnidades,
+      unidad: 'unid.',
+      costoTotal: Math.round(c.costReal),
+      cantDisplay: c.cant,
+      unidPorDisplay,
+    };
+    merchItems.push(item);
+
+    const div = document.createElement('div');
+    div.style.cssText = 'display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--surface2);';
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:4px;">
+        <input type="number" id="merch-cant-${i}" value="${totalUnidades}" min="0.001" step="0.001"
+          style="width:56px;text-align:center;padding:5px 6px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid #e85d3a;border-radius:6px;background:var(--surface2);"
+          oninput="updateMerch(${i},this.value)">
+      </div>
+      <div>
+        <div style="font-weight:600;font-size:13px;font-family:'DM Sans',sans-serif;">${esc(c.desc)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+          <select id="merch-unit-${i}"
+            style="padding:3px 6px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);font-family:'DM Mono',monospace;color:var(--text-muted);"
+            onchange="updateMerchUnit(${i},this.value)">
+            <option value="unid." selected>unid.</option>
+            <option value="kg">kg</option>
+            <option value="L">L</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;">${c.cant} display${c.cant>1?'s':''} × ${unidPorDisplay}u</span>
+        </div>
+      </div>
+      <div style="text-align:right;font-weight:700;font-size:14px;font-family:'DM Mono',monospace;color:var(--accent);">${peso(c.costReal)}</div>
+    `;
+    body.appendChild(div);
+  });
+
+  // Total row
+  const totalReal = costs.reduce((s,c)=>s+c.costReal,0);
+  const totalDiv = document.createElement('div');
+  totalDiv.style.cssText = 'display:flex;justify-content:space-between;padding:10px 8px;background:var(--accent);border-radius:6px;margin-top:8px;';
+  totalDiv.innerHTML = `
+    <span style="font-size:13px;font-weight:700;color:white;font-family:'DM Mono',monospace;">TOTAL FACTURA</span>
+    <span style="font-size:16px;font-weight:800;color:white;font-family:'DM Mono',monospace;">${peso(totalReal)}</span>
+  `;
+  body.appendChild(totalDiv);
+}
+
+function updateMerch(i, val){
+  if(merchItems[i]) merchItems[i].cantidad = parseFloat(val)||0;
+}
+
+function updateMerchUnit(i, val){
+  if(merchItems[i]) merchItems[i].unidad = val;
 }
 
 // ── Load FUDO catalog from localStorage (shared with fudo-conectar) ──
@@ -1047,58 +1136,120 @@ async function getFudoToken(){
 
 // Send to FUDO
 async function sendToFudo(){
-  const catId = el('fudo-cat')?.value;
-  const pmId  = el('fudo-pm')?.value;
+  const catId  = el('fudo-cat')?.value;
+  const pmId   = el('fudo-pm')?.value;
+  const status = el('fudo-status')?.value || 'paid';
   if(!catId) return alert2('alert3','al-err','✗','Elegí una categoría de gasto.');
+  if(status==='paid' && !pmId) return alert2('alert3','al-err','✗','Elegí un medio de pago.');
 
   goTo('step-send',null);
 
   try {
-    const token = await getFudoToken();
-    const PROXY = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
-    const API   = 'https://api.fu.do/v1alpha1';
-    const today = new Date().toISOString().split('T')[0];
+    const token   = await getFudoToken();
+    const PROXY   = 'https://fudo-proxy.dulcitostalca.workers.dev/?target=';
+    const API     = 'https://api.fu.do/v1alpha1';
+    const today   = new Date().toISOString().split('T')[0];
     const paydate = el('fudo-paydate')?.value || today;
-    const status  = el('fudo-status')?.value || 'paid';
     const comment = v('fudo-comment') || ('FacturaScan · ' + v('f-prov') + ' · ' + v('f-num'));
-    const totalReal = finalCosts.reduce((s,c)=>s+c.costReal,0);
+    const totalReal = Math.round(finalCosts.reduce((s,c)=>s+c.costReal,0));
 
-    // Build JSON:API payload
-    const payload = {
-      data: {
-        type: 'Expense',
-        attributes: {
-          amount: Math.round(totalReal),
-          date: v('f-fecha').split('/').reverse().join('-') || today,
-          description: comment,
-          receiptNumber: v('f-num') || '',
-          useInCashCount: false,
-          paymentDate: status === 'paid' ? paydate : null,
-        },
-        relationships: {
-          expenseCategory: { data: { id: catId, type: 'ExpenseCategory' } },
-          ...(pmId ? { paymentMethod: { data: { id: pmId, type: 'PaymentMethod' } } } : {})
-        }
+    // Parse date from DD/MM/YYYY to YYYY-MM-DD
+    const rawDate = v('f-fecha');
+    const expDate = rawDate
+      ? rawDate.split('/').reverse().join('-')
+      : today;
+
+    // Find provider ID from catalog
+    const provs = JSON.parse(localStorage.getItem('fd_provs')||'[]');
+    const provName = v('f-prov').toLowerCase();
+    const provMatch = provs.find(p => p.attributes?.name?.toLowerCase().includes(provName) || provName.includes(p.attributes?.name?.toLowerCase()));
+    const provId = provMatch?.id || null;
+
+    // Build atomic operations
+    const ops = [];
+
+    // 1. Create expense
+    const expenseData = {
+      type: 'Expense',
+      lid: '1',
+      attributes: {
+        amount: totalReal,
+        date: expDate,
+        description: comment,
+        receiptNumber: v('f-num') || null,
+        useInCashCount: false,
+      },
+      relationships: {
+        expenseCategory: { data: { type: 'ExpenseCategory', id: catId } },
+        ...(provId ? { provider: { data: { type: 'Provider', id: provId } } } : {}),
       }
     };
+    ops.push({ op: 'add', data: expenseData });
 
-    const res = await fetch(PROXY + encodeURIComponent(API + '/expenses'), {
+    // 2. Add expense items (merchandise detail)
+    if(merchItems.length > 0){
+      const bulkItems = merchItems
+        .filter(m => m.cantidad > 0)
+        .map(m => ({
+          type: 'ExpenseItem',
+          attributes: {
+            price: m.costoTotal,
+            quantity: m.cantidad,
+            detail: m.desc,
+          },
+          relationships: {
+            expense: { data: { type: 'Expense', lid: '1' } },
+            // Solo ingredient por ahora — se mejorará con matching
+            ingredient: { data: null },
+            product: { data: null },
+          }
+        }));
+      if(bulkItems.length > 0){
+        ops.push({ op: 'add', 'bulk:data': bulkItems });
+      }
+    }
+
+    // 3. Add payment if paid
+    if(status === 'paid' && pmId){
+      ops.push({
+        op: 'add',
+        data: {
+          type: 'Payment',
+          attributes: {
+            amount: totalReal,
+            paidAt: paydate,
+          },
+          relationships: {
+            paymentMethod: { data: { type: 'PaymentMethod', id: pmId } },
+            expense: { data: { type: 'Expense', lid: '1' } },
+          }
+        }
+      });
+    }
+
+    const res = await fetch(PROXY + encodeURIComponent(API + '/operations'), {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ 'atomic:operations': ops })
     });
 
     const txt = await res.text();
     let data; try { data=JSON.parse(txt); } catch { data={raw:txt}; }
 
     if(res.ok){
-      showSuccess(true, { provider:v('f-prov'), receipt_number:v('f-num'), date:v('f-fecha'), totals:{real_total:totalReal} }, data);
+      showSuccess(true, {
+        provider: v('f-prov'),
+        receipt_number: v('f-num'),
+        date: v('f-fecha'),
+        totals: { real_total: totalReal }
+      }, data);
     } else {
-      showSuccess(false, { provider:v('f-prov'), receipt_number:v('f-num'), date:v('f-fecha'), totals:{real_total:totalReal} }, {status:res.status,msg:txt});
+      goTo('step3',3);
+      alert2('alert3','al-err','✗', 'Error ' + res.status + ': ' + txt);
     }
   } catch(e) {
     goTo('step3',3);
@@ -1109,14 +1260,18 @@ async function sendToFudo(){
 function showSuccess(ok,payload,extra){
   goTo('step4',4);
   const rt=payload.totals.real_total;
-  el('succ-desc').textContent=ok?`Gasto de ${payload.provider} registrado en FUDO.`:`Datos calculados correctamente. Revisá la conexión con FUDO.`;
+  const expId = extra?.['atomic:results']?.[0]?.data?.id || extra?.data?.id || '—';
+  el('succ-desc').textContent=ok
+    ? `✓ Gasto registrado en FUDO correctamente.`
+    : `Error al registrar. Revisá los datos.`;
   el('succ-grid').innerHTML=`
     <div class="ic"><div class="lbl">Proveedor</div><div class="val" style="font-size:12px;">${esc(payload.provider||'—')}</div></div>
     <div class="ic"><div class="lbl">Factura N°</div><div class="val" style="font-size:12px;">${esc(payload.receipt_number||'—')}</div></div>
     <div class="ic"><div class="lbl">Fecha</div><div class="val">${esc(payload.date||'—')}</div></div>
-    <div class="ic"><div class="lbl">Costo real total</div><div class="val" style="color:var(--accent3);">${peso(rt)}</div></div>`;
+    <div class="ic"><div class="lbl">Costo real total</div><div class="val" style="color:var(--accent3);">${peso(rt)}</div></div>
+    ${ok?`<div class="ic"><div class="lbl">ID en FUDO</div><div class="val" style="color:var(--accent);">#${esc(String(expId))}</div></div>`:''}`;
   if(!ok){
-    el('succ-extra').innerHTML=`<div class="alert al-warn" style="margin-top:12px;text-align:left;"><span class="a-i">⚠</span><div><strong>${esc(String(extra.status))}</strong>: ${esc(extra.msg)}<br><br>Pedí a soporte de FUDO la activación del endpoint <code>/api/v1/expenses</code>. Tu payload con todos los costos calculados está listo para usar con Zapier/n8n:</div></div><pre class="jdump">${esc(JSON.stringify(payload,null,2))}</pre>`;
+    el('succ-extra').innerHTML=`<div class="alert al-err" style="margin-top:12px;text-align:left;"><span class="a-i">✗</span><div><strong>Error:</strong> ${esc(JSON.stringify(extra))}</div></div>`;
   }
 }
 
