@@ -1039,7 +1039,7 @@ function calcFinalCosts(){
       const skuMatch = (existing.name || '').match(/sku:\s*(\d+)/i);
       if (skuMatch && parseInt(skuMatch[1], 10) !== codigoNum) {
         S.s(matchKey, null); // borrar match incorrecto
-        localStorage.removeItem('cleared_' + matchKey); // permitir que auto-match lo corrija
+        localStorage.removeItem('fs_cleared_' + matchKey); // permitir que auto-match lo corrija
       }
     }
   });
@@ -1084,22 +1084,22 @@ function buildMerchDetail(costs){
     let savedMatch = S.g(matchKey);
 
     // Auto-match por SKU: si no hay match guardado y tenemos código, buscamos "SKU: CODIGO" en el catálogo
-    // Solo corre si el match no fue borrado manualmente (clearMatch guarda null explícitamente)
-    const matchCleared = localStorage.getItem('cleared_' + matchKey) === '1';
+    // Solo corre si el match no fue borrado manualmente
+    const matchCleared = localStorage.getItem('fs_cleared_' + matchKey) === '1';
     if (!savedMatch && !matchCleared && c.codigo) {
       try {
         const catalog = JSON.parse(localStorage.getItem('fs_catalog') || '[]');
-        const codigoStr = String(c.codigo).trim();
-        // Buscar "SKU: 1966" — coincidencia exacta del número, con o sin ceros a la izquierda
-        const codigoNum = parseInt(String(c.codigo).trim(), 10); // 0125 → 125, 1966 → 1966
-        const found = catalog.find(p => {
-          const skuMatch = (p.nombre || '').match(/sku:\s*(\d+)/i);
-          if (!skuMatch) return false;
-          return parseInt(skuMatch[1], 10) === codigoNum; // 0125 == 125 ✓
-        });
-        if (found) {
-          savedMatch = { id: found.id, type: 'Product', name: found.nombre };
-          S.s(matchKey, savedMatch);
+        if (catalog.length > 0) {
+          const codigoNum = parseInt(String(c.codigo).trim(), 10); // 0125→125, 1966→1966
+          const found = catalog.find(p => {
+            const skuMatch = (p.nombre || '').match(/sku:\s*(\d+)/i);
+            if (!skuMatch) return false;
+            return parseInt(skuMatch[1], 10) === codigoNum; // 0125 == 125 ✓
+          });
+          if (found) {
+            savedMatch = { id: found.id, type: 'Product', name: found.nombre };
+            S.s(matchKey, savedMatch);
+          }
         }
       } catch(e) {}
     }
@@ -1238,7 +1238,7 @@ function searchFudoItem(idx, query, matchKey){
 function saveMatch(idx, matchKey, fudoId, fudoType, fudoName){
   // Save to localStorage
   S.s(matchKey, { id: fudoId, type: fudoType, name: fudoName });
-  localStorage.removeItem('cleared_' + matchKey); // ya no está borrado manualmente
+  localStorage.removeItem('fs_cleared_' + matchKey); // ya no está borrado manualmente
   // Update merchItems
   if(merchItems[idx]){
     merchItems[idx].fudoId   = fudoId;
@@ -1260,7 +1260,7 @@ function saveMatch(idx, matchKey, fudoId, fudoType, fudoName){
 
 function clearMatch(matchKey, idx){
   S.s(matchKey, null);
-  localStorage.setItem('cleared_' + matchKey, '1'); // marcar como borrado manualmente
+  localStorage.setItem('fs_cleared_' + matchKey, '1'); // marcar como borrado manualmente
   if(merchItems[idx]){ merchItems[idx].fudoId=null; merchItems[idx].fudoType=null; merchItems[idx].fudoName=null; }
   // Rebuild merch detail
   buildMerchDetail(finalCosts);
@@ -1294,24 +1294,47 @@ function loadFudoCatalog(){
     if(cats.length){
       catSel.innerHTML = '<option value="">Elegir categoría...</option>' +
         cats.map(c=>`<option value="${c.id}">${esc(c.attributes?.name||c.id)}</option>`).join('');
-      // Default: Minimarket (id 1) para Coca Cola
       if(activePat==='coca_cola') catSel.value='1';
-      // Pre-seleccionar categoría según proveedor conocido
-      if(selectedProvId === '10' || selectedProvId === '4') {
-        // Molino Linderos o Central Mayorista → CV: Materia Prima (id 2)
-        catSel.value='2';
-      }
+      if(selectedProvId === '10' || selectedProvId === '4') catSel.value='2';
     }
     if(pms.length){
       pmSel.innerHTML = '<option value="">Elegir medio de pago...</option>' +
         pms.map(p=>`<option value="${p.id}">${esc(p.attributes?.name||p.id)}</option>`).join('');
     }
-    // Set today as payment date
     const today = new Date().toISOString().split('T')[0];
     if(el('fudo-paydate'))  el('fudo-paydate').value  = today;
     if(el('fudo-paydate2')) el('fudo-paydate2').value = today;
     togglePayment();
   } catch(e){}
+
+  // Si no hay catálogo de productos en localStorage, descargarlo ahora desde FUDO
+  const catalog = localStorage.getItem('fs_catalog');
+  if (!catalog || JSON.parse(catalog).length === 0) {
+    loadProductCatalog();
+  }
+}
+
+async function loadProductCatalog(){
+  try {
+    const token = await getFudoToken();
+    if (!token) return;
+    let all = [], page = 1;
+    while(true){
+      const url = `https://api.fu.do/v1alpha1/products?fields[product]=name,code&page[size]=500&page[number]=${page}`;
+      const res = await fetch('https://fudo-proxy.dulcitostalca.workers.dev/?target=' + encodeURIComponent(url), {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+      });
+      const data = await res.json();
+      if (!data.data || data.data.length === 0) break;
+      all = all.concat(data.data);
+      if (data.data.length < 500) break;
+      page++;
+    }
+    const catalog = all.map(p => ({ id: p.id, nombre: p.attributes.name, codigo: p.attributes.code||'', tipo:'producto' }));
+    localStorage.setItem('fs_catalog', JSON.stringify(catalog));
+    // Re-renderizar con matches ahora que tenemos el catálogo
+    if (finalCosts.length > 0) buildMerchDetail(finalCosts);
+  } catch(e){ console.error('Error cargando catálogo de productos:', e); }
 }
 
 // ── Get token from Worker or localStorage ──────────────────
