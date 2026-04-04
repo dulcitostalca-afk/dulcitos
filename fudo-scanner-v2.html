@@ -1027,27 +1027,13 @@ function calcFinalCosts(){
 }
 
 function renderCosts(costs,freight){
-  const tbody=el('cost-body');tbody.innerHTML='';
+  // Tabla removida del Step 3 — solo actualizar totales si existen
   let sN=0,sI=0,sF=0,sR=0;
-  costs.forEach(c=>{
-    const t=c.tax;
-    const badge=`<span class="tbadge ${t.badge}">${t.el}</span>`;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td>${esc(c.desc)} ${badge}</td>
-      <td style="text-align:right">${fmt(c.cant)}</td>
-      <td style="text-align:right">${peso(c.neto)}</td>
-      <td style="text-align:right">${peso(c.iva+c.extra)}</td>
-      <td style="text-align:right">${peso(c.fShare)}</td>
-      <td style="text-align:right;font-weight:700;color:var(--accent3);">${peso(c.costReal)}</td>`;
-    tbody.appendChild(tr);
-    sN+=c.neto;sI+=c.iva+c.extra;sF+=c.fShare;sR+=c.costReal;
-  });
-  const tfoot=document.createElement('tr');tfoot.className='hrow';
-  tfoot.innerHTML=`<td colspan="2" style="font-weight:700;font-family:'DM Sans',sans-serif;">TOTAL</td><td style="text-align:right">${peso(sN)}</td><td style="text-align:right">${peso(sI)}</td><td style="text-align:right">${peso(sF)}</td><td style="text-align:right;font-size:15px;">${peso(sR)}</td>`;
-  tbody.appendChild(tfoot);
-  el('t-neto').textContent=peso(sN);el('t-imp').textContent=peso(sI);
-  el('t-flete').textContent=peso(freight);el('t-real').textContent=peso(sR);
+  costs.forEach(c=>{sN+=c.neto;sI+=c.iva+c.extra;sF+=c.fShare;sR+=c.costReal;});
+  if(el('t-neto')) el('t-neto').textContent=peso(sN);
+  if(el('t-imp'))  el('t-imp').textContent=peso(sI);
+  if(el('t-flete'))el('t-flete').textContent=peso(freight);
+  if(el('t-real')) el('t-real').textContent=peso(sR);
 
   // Construir detalle de mercadería
   buildMerchDetail(costs);
