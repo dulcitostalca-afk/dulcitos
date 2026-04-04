@@ -578,7 +578,7 @@ function buildPrompt(pat){
     coca_cola:`CRÍTICO: Esta es una factura de Coca Cola Embonor S.A. Chile (RUT 93.281.000-K).
 
 La tabla tiene columnas en este orden EXACTO:
-COLUMNA 1: Código
+COLUMNA 1: Código          ← EXTRAER ESTE VALOR EN EL CAMPO "codigo". Es un número corto (1-4 dígitos) al inicio de cada fila, ANTES de la descripción. Ejemplos: 1966, 0125, 2133, 0161. NO confundas con otros números de la factura.
 COLUMNA 2: Descripción  
 COLUMNA 3: Cantidad
 COLUMNA 4: Precio Unitario  ← NO USAR ESTE VALOR
@@ -841,6 +841,7 @@ function addItemCard(it, idx){
 
     <input type="hidden" class="h-desc" value="${esc(it.descripcion||'')}">
     <input type="hidden" class="h-tax" value="${it.tipo_impuesto||'iva'}">
+    <input type="hidden" class="h-codigo" value="${esc(it.codigo||'')}">
   `;
   el('items-cards').appendChild(card);
 }
@@ -968,6 +969,7 @@ function calcFinalCosts(){
       const idx = card.dataset.idx || i;
       const desc  = card.querySelector('.h-desc')?.value||'';
       const taxKey= card.querySelector('.h-tax')?.value||'iva';
+      const codigo= card.querySelector('.h-codigo')?.value||'';
       const cant  = parseFloat(el('cant-'+idx)?.value)||1;
       const neto  = parseFloat(el('neto-'+idx)?.value)||0;
       const flete = parseFloat(el('flete-'+idx)?.value)||0;
@@ -975,7 +977,7 @@ function calcFinalCosts(){
       const adic  = parseFloat(el('adic-'+idx)?.value)||0;
       const costReal = neto + flete + iva + adic;
       if(!desc&&!neto) return;
-      rows.push({desc,cant,neto,fShare:flete,iva,extra:adic,tax:TAXES[taxKey]||TAXES['iva'],taxKey,costReal,inlineFlete:true});
+      rows.push({desc,cant,neto,fShare:flete,iva,extra:adic,tax:TAXES[taxKey]||TAXES['iva'],taxKey,costReal,inlineFlete:true,codigo});
     });
   } else {
     // Read from table rows
@@ -1003,6 +1005,7 @@ function calcFinalCosts(){
       tax:r.tax, taxKey:r.taxKey,
       fShare:r.fShare, costReal:r.costReal,
       costRealUnit: r.cant>0 ? r.costReal/r.cant : 0,
+      codigo: r.codigo||'',
       inlineFlete:true
     }));
   } else {
@@ -1064,7 +1067,20 @@ function buildMerchDetail(costs){
 
     // Check if we have a saved match for this item
     const matchKey = 'match_' + (selectedProvId||'0') + '_' + c.desc.trim().toLowerCase().replace(/\s+/g,'_');
-    const savedMatch = S.g(matchKey);
+    let savedMatch = S.g(matchKey);
+
+    // Auto-match por SKU: si no hay match guardado y tenemos código, buscamos "SKU: CODIGO" en el catálogo
+    if (!savedMatch && c.codigo) {
+      try {
+        const catalog = JSON.parse(localStorage.getItem('fs_catalog') || '[]');
+        const skuSearch = 'sku: ' + String(c.codigo).replace(/^0+/, ''); // quita ceros a la izquierda
+        const found = catalog.find(p => (p.nombre || '').toLowerCase().includes(skuSearch));
+        if (found) {
+          savedMatch = { id: found.id, type: 'Product', name: found.nombre };
+          S.s(matchKey, savedMatch); // guardar para próxima vez
+        }
+      } catch(e) {}
+    }
 
     const item = {
       idx: i,
