@@ -468,6 +468,8 @@ const PROV_PATTERNS = {
   '3':  'coca_cola',  // Coca Cola Embonor
   '10': 'harina',     // Molino Linderos
   '4':  'harina',     // Central Mayorista
+  '22': 'sii',        // Lácteos La Isla (Rafael Jose Perez RUT 25.830.155-2)
+  '19': 'sii',        // Productos Javier Portillo EIRL
 };
 
 let selectedProvId = null;
@@ -499,7 +501,7 @@ function selectProvider(id, name){
   const selDiv = el('prov-selected');
   selDiv.style.display='flex';
   el('prov-sel-name').textContent=name;
-  const patLabels={coca_cola:'🥤 Patrón Coca Cola',harina:'🌾 Patrón Harina de Trigo',generic:'📄 Patrón genérico'};
+  const patLabels={coca_cola:'🥤 Patrón Coca Cola',harina:'🌾 Patrón Harina de Trigo',sii:'🧾 Patrón SII',generic:'📄 Patrón genérico'};
   el('prov-sel-pat').textContent=patLabels[activePat]||'📄 Patrón genérico';
 }
 
@@ -517,6 +519,7 @@ function checkAndScan(){
 
 const PATTERNS={
   generic:  {desc:'Sin patrón — la IA detecta el formato automáticamente.',defTax:'iva'},
+  sii:      {desc:'🧾 Factura formato SII Chile: Codigo | Descripcion | Cantidad | Precio | %Impto Adic. | %Desc. | Valor. IVA 19% sobre monto neto total.',defTax:'iva'},
   coca_cola:{desc:'🥤 Coca Cola Embonor: precio neto + ILA bebidas analcohólicas (18%) + IVA (19%). La IA suma las columnas automáticamente.',defTax:'ila_anc'},
   harina:   {desc:'🌾 Harina de trigo: impuesto adicional 12% + IVA 19%.',defTax:'harina'},
   alcohol:  {desc:'🍷 Bebidas alcohólicas con ILA variable + IVA 19%.',defTax:'ila_alc'},
@@ -574,7 +577,22 @@ function handleFile(f){
 // Scan
 function buildPrompt(pat){
   const allHints = {
-    generic:'Detectá el formato automáticamente. Identificá todas las columnas y leé cada fila de la tabla de productos.',
+    generic:`Detectá el formato automáticamente. Identificá todas las columnas y leé cada fila de la tabla de productos.
+
+REGLA CRÍTICA — COLUMNA CANTIDAD:
+La columna de cantidad puede contener el número seguido de la presentación del producto. Ejemplos:
+- "4 300g"  → cantidad=4  (NO 4.3 — el 300g es la presentación)
+- "2 500M"  → cantidad=2  (NO 2.5 — 500M significa 500ml)
+- "5 600g"  → cantidad=5  (NO 5.6)
+- "4 500ml" → cantidad=4
+- "12 1lt"  → cantidad=12
+- "4,07 Kg" → cantidad=4.07 ✓ (la coma es separador decimal, Kg no es número)
+REGLA: El número ANTES del espacio es la cantidad. Lo que viene después es presentación, NO forma parte del número.
+
+COLUMNAS TÍPICAS FACTURA SII CHILE: Codigo | Descripcion | Cantidad | Precio | %Impto Adic. | %Desc. | Valor
+- "Valor" = precio neto total del ítem (Cantidad × Precio)
+- "Precio" = precio unitario neto
+- IVA 19% se calcula sobre el MONTO NETO total, no por ítem`,
     coca_cola:`CRÍTICO: Esta es una factura de Coca Cola Embonor S.A. Chile (RUT 93.281.000-K).
 
 La tabla tiene columnas en este orden EXACTO:
@@ -611,11 +629,40 @@ Esta factura tiene 5 productos — devolvé exactamente 5 ítems.
 Para unidades: busca "X0N" → N = unidades por display. Total = cantidad × N.`,
     harina:'Esta factura contiene harina de trigo con impuesto específico del 12% sobre precio neto + IVA 19%.',
     alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) + IVA 19%.',
+    sii:`Esta es una factura electrónica formato estándar SII Chile.
+
+COLUMNAS EN ORDEN EXACTO: Codigo | Descripcion | Cantidad | Precio | %Impto Adic. | %Desc. | Valor
+
+REGLAS:
+- "Valor" = neto_total del ítem (Cantidad × Precio unitario). Usar este campo.
+- "Precio" = precio_neto_unitario. Usar este campo.
+- IVA 19% se aplica sobre el MONTO NETO total de la factura, no por ítem.
+- Si hay descuento (%Desc.), el Valor ya lo incluye descontado.
+- El campo "codigo" puede ser "-" o vacío — dejarlo como string vacío.
+
+CANTIDAD CON PRESENTACIÓN — REGLA CRÍTICA:
+La cantidad puede venir seguida de la presentación. Separar siempre:
+- "4 300g"  → cantidad=4,  descripcion incluye "300g"
+- "2 500M"  → cantidad=2,  (500M = 500ml)
+- "5 600g"  → cantidad=5
+- "4,07 Kg" → cantidad=4.07 (coma decimal, Kg no es número)
+- "5,1 Kg"  → cantidad=5.1
+- "5,12 Kg" → cantidad=5.12
+El número ANTES del espacio es la cantidad. NUNCA pegues los dígitos de la presentación a la cantidad.`,
   };
   const hint = allHints[pat] || allHints.generic;
   const esCocaCola = pat === 'coca_cola';
   return `Analizá esta imagen de factura de compra chilena.
 ${hint}
+
+REGLA GLOBAL — CANTIDAD: Si la celda de cantidad contiene un número seguido de una presentación (ml, lt, kg, g, cc, M, 500M, 300g, etc.), el número ANTES del espacio es la cantidad real. Ejemplos CRÍTICOS:
+- "4 300g"  → cantidad=4  (NO 4.3 ni 43)
+- "2 500M"  → cantidad=2  (NO 2.5 — 500M significa 500ml)
+- "5 600g"  → cantidad=5  (NO 5.6 ni 56)
+- "4 500ml" → cantidad=4  (NO 4.5)
+- "12 1lt"  → cantidad=12
+- "4,07 Kg" → cantidad=4.07 ✓ (coma decimal, no hay presentación pegada)
+NUNCA combines los dígitos de la presentación con la cantidad. El separador decimal en Chile es la coma (,) no el punto.
 
 Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto extra:
 {
