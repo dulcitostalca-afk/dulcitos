@@ -1186,13 +1186,13 @@ function buildMerchDetail(costs){
 
     // Matching status
     const matchHtml = savedMatch
-      ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
-          <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;">
+      ? `<div id="match-wrap-${i}" style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;">
+          <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;">
             ✓ ${esc(savedMatch.name)}
           </span>
           <button onclick="clearMatch('${matchKey}',${i})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:10px;text-decoration:underline;">cambiar</button>
         </div>`
-      : `<div style="margin-top:6px;">
+      : `<div id="match-wrap-${i}" style="margin-top:6px;">
           <input type="text" id="match-search-${i}" placeholder="Buscar en FUDO... (opcional)"
             oninput="searchFudoItem(${i},this.value,'${matchKey}')"
             style="width:100%;padding:5px 10px;font-size:12px;border:1px dashed var(--border);border-radius:4px;background:var(--surface2);">
@@ -1200,13 +1200,13 @@ function buildMerchDetail(costs){
         </div>`;
 
     div.innerHTML = `
-      <div style="display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:start;">
+      <div style="display:grid;grid-template-columns:80px 1fr auto;gap:8px;align-items:start;">
         <div>
           <input type="number" id="merch-cant-${i}" value="${totalUnidades}" min="0.001" step="0.001"
-            style="width:56px;text-align:center;padding:5px 6px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid #e85d3a;border-radius:6px;background:var(--surface2);"
+            style="width:76px;text-align:center;padding:6px 6px;font-size:15px;font-weight:700;font-family:'DM Mono',monospace;border:1.5px solid #e85d3a;border-radius:6px;background:var(--surface2);"
             oninput="updateMerch(${i},this.value)">
           <select id="merch-unit-${i}"
-            style="width:56px;padding:3px 4px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);margin-top:3px;"
+            style="width:76px;padding:3px 4px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);margin-top:3px;"
             onchange="updateMerchUnit(${i},this.value)">
             <option value="unid." selected>unid.</option>
             <option value="kg">kg</option>
@@ -1299,21 +1299,19 @@ function searchFudoItem(idx, query, matchKey){
 }
 
 function saveMatch(idx, matchKey, fudoId, fudoType, fudoName){
-  // Save to localStorage
   S.s(matchKey, { id: fudoId, type: fudoType, name: fudoName });
-  localStorage.removeItem('fs_cleared_' + matchKey); // ya no está borrado manualmente
-  // Update merchItems
+  localStorage.removeItem('fs_cleared_' + matchKey);
   if(merchItems[idx]){
     merchItems[idx].fudoId   = fudoId;
     merchItems[idx].fudoType = fudoType;
     merchItems[idx].fudoName = fudoName;
   }
-  // Update UI — replace search with confirmed badge
-  const searchDiv = el('match-search-'+idx)?.parentElement;
-  if(searchDiv){
-    searchDiv.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace;">
+  // Reemplazar el wrap de búsqueda con el badge de confirmado
+  const wrap = el('match-wrap-'+idx) || el('match-search-'+idx)?.parentElement;
+  if(wrap){
+    wrap.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;">
+        <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;font-family:'DM Mono',monospace;">
           ✓ ${esc(fudoName)}
         </span>
         <button onclick="clearMatch('${matchKey}',${idx})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:10px;text-decoration:underline;">cambiar</button>
