@@ -640,14 +640,23 @@ REGLAS:
 - Si hay descuento (%Desc.), el Valor ya lo incluye descontado.
 - El campo "codigo" puede ser "-" o vacío — dejarlo como string vacío.
 
+FORMATO DE NÚMEROS — CRÍTICO (Chile usa punto como separador de miles):
+- "63.870" = SESENTA Y TRES MIL OCHOCIENTOS SETENTA = 63870 (NO 63.87)
+- "7.227"  = SIETE MIL DOSCIENTOS VEINTISIETE = 7227
+- "203.877" = DOSCIENTOS TRES MIL = 203877
+- "6.387"  = SEIS MIL = 6387
+- La coma (,) es el separador decimal: "4,07" = 4.07
+- El punto (.) es el separador de miles: "63.870" = 63870
+NUNCA interpretes el punto como decimal en números chilenos.
+
 CANTIDAD CON PRESENTACIÓN — REGLA CRÍTICA:
 La cantidad puede venir seguida de la presentación. Separar siempre:
 - "4 300g"  → cantidad=4,  descripcion incluye "300g"
 - "2 500M"  → cantidad=2,  (500M = 500ml)
 - "5 600g"  → cantidad=5
+- "10 Kg"   → cantidad=10
 - "4,07 Kg" → cantidad=4.07 (coma decimal, Kg no es número)
 - "5,1 Kg"  → cantidad=5.1
-- "5,12 Kg" → cantidad=5.12
 El número ANTES del espacio es la cantidad. NUNCA pegues los dígitos de la presentación a la cantidad.`,
   };
   const hint = allHints[pat] || allHints.generic;
@@ -663,6 +672,13 @@ REGLA GLOBAL — CANTIDAD: Si la celda de cantidad contiene un número seguido d
 - "12 1lt"  → cantidad=12
 - "4,07 Kg" → cantidad=4.07 ✓ (coma decimal, no hay presentación pegada)
 NUNCA combines los dígitos de la presentación con la cantidad. El separador decimal en Chile es la coma (,) no el punto.
+
+REGLA GLOBAL — NÚMEROS CHILENOS: En Chile el punto (.) es separador de MILES y la coma (,) es separador decimal.
+- "63.870" = 63870 (NO 63.87)
+- "7.227"  = 7227
+- "1.765"  = 1765
+- "4,07"   = 4.07
+Todos los valores monetarios de facturas chilenas usan este formato.
 
 Devolvé ÚNICAMENTE un JSON con esta estructura exacta, sin markdown ni texto extra:
 {
