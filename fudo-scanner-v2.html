@@ -465,11 +465,11 @@ let imgFile=null,imgB64=null,activePat='generic',extracted={},finalCosts=[];
 
 // ── Provider patterns map ─────────────────────────────────
 const PROV_PATTERNS = {
-  '3':  'coca_cola',  // Coca Cola Embonor
-  '10': 'harina',     // Molino Linderos
-  '4':  'harina',     // Central Mayorista
-  '22': 'sii',        // Lácteos La Isla (Rafael Jose Perez RUT 25.830.155-2)
-  '19': 'sii',        // Productos Javier Portillo EIRL
+  '3':  'coca_cola',        // Coca Cola Embonor
+  '10': 'harina',           // Molino Linderos
+  '4':  'central_mayorista',// Central Mayorista
+  '22': 'sii',              // Lácteos La Isla (Rafael Jose Perez RUT 25.830.155-2)
+  '19': 'sii',              // Productos Javier Portillo EIRL
 };
 
 let selectedProvId = null;
@@ -501,7 +501,7 @@ function selectProvider(id, name){
   const selDiv = el('prov-selected');
   selDiv.style.display='flex';
   el('prov-sel-name').textContent=name;
-  const patLabels={coca_cola:'🥤 Patrón Coca Cola',harina:'🌾 Patrón Harina de Trigo',sii:'🧾 Patrón SII',generic:'📄 Patrón genérico'};
+  const patLabels={coca_cola:'🥤 Patrón Coca Cola',harina:'🌾 Patrón Harina de Trigo',sii:'🧾 Patrón SII',central_mayorista:'🏪 Patrón Central Mayorista',generic:'📄 Patrón genérico'};
   el('prov-sel-pat').textContent=patLabels[activePat]||'📄 Patrón genérico';
 }
 
@@ -518,11 +518,12 @@ function checkAndScan(){
 }
 
 const PATTERNS={
-  generic:  {desc:'Sin patrón — la IA detecta el formato automáticamente.',defTax:'iva'},
-  sii:      {desc:'🧾 Factura formato SII Chile: Codigo | Descripcion | Cantidad | Precio | %Impto Adic. | %Desc. | Valor. IVA 19% sobre monto neto total.',defTax:'iva'},
-  coca_cola:{desc:'🥤 Coca Cola Embonor: precio neto + ILA bebidas analcohólicas (18%) + IVA (19%). La IA suma las columnas automáticamente.',defTax:'ila_anc'},
-  harina:   {desc:'🌾 Harina de trigo: impuesto adicional 12% + IVA 19%.',defTax:'harina'},
-  alcohol:  {desc:'🍷 Bebidas alcohólicas con ILA variable + IVA 19%.',defTax:'ila_alc'},
+  generic:         {desc:'Sin patrón — la IA detecta el formato automáticamente.',defTax:'iva'},
+  sii:             {desc:'🧾 Factura formato SII Chile: Codigo | Descripcion | Cantidad | Precio | %Impto Adic. | %Desc. | Valor.',defTax:'iva'},
+  coca_cola:       {desc:'🥤 Coca Cola Embonor: precio neto + ILA bebidas analcohólicas (18%) + IVA (19%).',defTax:'ila_anc'},
+  harina:          {desc:'🌾 Harina de trigo: impuesto adicional 12% + IVA 19%.',defTax:'harina'},
+  alcohol:         {desc:'🍷 Bebidas alcohólicas con ILA variable + IVA 19%.',defTax:'ila_alc'},
+  central_mayorista:{desc:'🏪 Central Mayorista: ticket de caja con código de barra por ítem. IVA 19% general + IHA 12% solo en harina.',defTax:'iva'},
 };
 
 const TAXES={
@@ -629,6 +630,35 @@ Esta factura tiene 5 productos — devolvé exactamente 5 ítems.
 Para unidades: busca "X0N" → N = unidades por display. Total = cantidad × N.`,
     harina:'Esta factura contiene harina de trigo con impuesto específico del 12% sobre precio neto + IVA 19%.',
     alcohol:'Factura de bebidas alcohólicas. Identificá el ILA de cada producto (varía por grado alcohólico) + IVA 19%.',
+    central_mayorista:`Esta es una factura de Central Mayorista Chile (RUT 76.232.647-7), formato ticket de caja.
+
+ESTRUCTURA DE CADA ÍTEM — dos líneas por producto:
+LÍNEA 1: CANTxPRECIO_UNIT    NOMBRE_CORTO    $ TOTAL_NETO
+LÍNEA 2: CODIGO: 78xxxxxxxxxx  (código de barra EAN-13)
+
+EJEMPLOS REALES:
+- "24X1.117,647    ACE.VEGETAL    $ 26.824" → cant=24, precio_unit=1117.647, neto_total=26824
+  CODIGO: 7794870056009
+- "10X1.068,823    ARROZ G.SELE   $ 10.588" → cant=10, precio_unit=1068.823, neto_total=10588
+  CODIGO: 7801420220138
+
+REGLAS CRÍTICAS:
+- "codigo" = el número largo de la línea CODIGO: (EAN-13, ~13 dígitos). MUY IMPORTANTE extraerlo.
+- "neto_total" = el valor $ al final de la línea 1. Es el total del ítem ya calculado.
+- "precio_neto_unitario" = el número después de X (con punto como miles, coma como decimal)
+- "cantidad" = el número ANTES de X
+- NÚMEROS CHILENOS: punto=miles, coma=decimal. "1.117,647"=1117.647, "26.824"=26824
+
+IMPUESTOS:
+- TODOS los ítems pagan IVA 19% sobre su neto_total EXCEPTO el ítem de harina.
+- El ítem HARINA (descripción contiene "HARINA") paga además IHA 12% sobre su neto_total.
+- "tipo_impuesto": usar "iva" para todos, excepto "harina" para el ítem de harina.
+- El IVA y el IHA están en los totales generales de la factura, NO por ítem — calculá por ítem aplicando el % correspondiente sobre neto_total.
+- "iva_item" = neto_total × 0.19
+- Para harina: "adicional_item" = neto_total × 0.12, para el resto adicional_item=0
+- "costo_real_item" = neto_total + iva_item + adicional_item
+
+VERIFICACIÓN: La suma de todos los neto_total debe coincidir con TOTAL NETO de la factura.`,
     sii:`Esta es una factura electrónica formato estándar SII Chile.
 
 COLUMNAS EN ORDEN EXACTO: Codigo | Descripcion | Cantidad | Precio | %Impto Adic. | %Desc. | Valor
@@ -1096,17 +1126,72 @@ function calcFinalCosts(){
   finalCosts.forEach(c => {
     const matchKey = 'match_' + (selectedProvId||'0') + '_' + c.desc.trim().toLowerCase().replace(/\s+/g,'_');
     const existing = S.g(matchKey);
-    // Si el match guardado no tiene el código correcto en el nombre, borrarlo para que el nuevo auto-match lo recalcule
     if (existing && c.codigo) {
-      const codigoNum = parseInt(String(c.codigo).trim(), 10); // 0125 → 125
+      const codigoNum = parseInt(String(c.codigo).trim(), 10);
       const skuMatch = (existing.name || '').match(/sku:\s*(\d+)/i);
       if (skuMatch && parseInt(skuMatch[1], 10) !== codigoNum) {
-        S.s(matchKey, null); // borrar match incorrecto
-        localStorage.removeItem('fs_cleared_' + matchKey); // permitir que auto-match lo corrija
+        S.s(matchKey, null);
+        localStorage.removeItem('fs_cleared_' + matchKey);
       }
     }
   });
+
+  // Enriquecer nombres con Open Food Facts si es Central Mayorista
+  if (activePat === 'central_mayorista') {
+    enrichWithOpenFoodFacts(finalCosts).then(() => {
+      buildMerchDetail(finalCosts);
+    });
+  }
+
   goTo('step3',3);
+}
+
+async function enrichWithOpenFoodFacts(costs) {
+  const codesParaEnriquecer = costs.filter(c => c.codigo && String(c.codigo).length >= 8);
+  if (!codesParaEnriquecer.length) return;
+
+  // Procesar en paralelo con límite para no sobrecargar la API (max 5 a la vez)
+  const BATCH = 5;
+  for (let i = 0; i < codesParaEnriquecer.length; i += BATCH) {
+    const batch = codesParaEnriquecer.slice(i, i + BATCH);
+    await Promise.all(batch.map(async c => {
+      try {
+        // Revisar caché local primero
+        const cacheKey = 'off_' + c.codigo;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data.nombre) c.desc = data.nombre;
+          return;
+        }
+
+        const res = await fetch(
+          `https://world.openfoodfacts.org/api/v2/product/${c.codigo}?fields=product_name,brands`,
+          { headers: { 'User-Agent': 'DulcitosFacturaScan/2.0' } }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.status === 1 && data.product) {
+          const nombre = data.product.product_name || '';
+          const marca  = data.product.brands || '';
+          if (nombre) {
+            // Construir nombre completo: "Marca - Nombre" o solo "Nombre"
+            const nombreCompleto = marca && !nombre.toLowerCase().includes(marca.toLowerCase())
+              ? `${marca} ${nombre}` : nombre;
+            c.desc = nombreCompleto;
+            // Guardar en caché por 30 días
+            localStorage.setItem(cacheKey, JSON.stringify({ nombre: nombreCompleto, ts: Date.now() }));
+          }
+        } else {
+          // No encontrado — guardar igual para no volver a consultar
+          localStorage.setItem(cacheKey, JSON.stringify({ nombre: '', ts: Date.now() }));
+        }
+      } catch(e) {
+        // Si falla la consulta, mantener nombre original
+      }
+    }));
+  }
 }
 
 function renderCosts(costs,freight){
@@ -1153,12 +1238,21 @@ function buildMerchDetail(costs){
       try {
         const catalog = JSON.parse(localStorage.getItem('fs_catalog') || '[]');
         if (catalog.length > 0) {
-          const codigoNum = parseInt(String(c.codigo).trim(), 10); // 0125→125, 1966→1966
-          const found = catalog.find(p => {
-            const skuMatch = (p.nombre || '').match(/sku:\s*(\d+)/i);
-            if (!skuMatch) return false;
-            return parseInt(skuMatch[1], 10) === codigoNum; // 0125 == 125 ✓
-          });
+          const codigoStr = String(c.codigo).trim();
+          const codigoNum = parseInt(codigoStr, 10);
+
+          // Método 1: buscar por código de barra EAN en campo "codigo" del catálogo (Central Mayorista)
+          let found = catalog.find(p => p.codigo && String(p.codigo).trim() === codigoStr);
+
+          // Método 2: buscar por SKU en el nombre (Coca Cola) — "SKU: 1966"
+          if (!found) {
+            found = catalog.find(p => {
+              const skuMatch = (p.nombre || '').match(/sku:\s*(\d+)/i);
+              if (!skuMatch) return false;
+              return parseInt(skuMatch[1], 10) === codigoNum;
+            });
+          }
+
           if (found) {
             savedMatch = { id: found.id, type: 'Product', name: found.nombre };
             S.s(matchKey, savedMatch);
